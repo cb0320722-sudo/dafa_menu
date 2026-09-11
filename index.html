@@ -149,8 +149,8 @@ body.edit-on .manage{display:block}
   </div>
   <div class="manage">
     <h3>管理 · 雲端同步 &amp; 備份</h3>
-    <label style="display:block;font-size:12.5px;font-weight:800;color:var(--brown-soft);margin-bottom:4px">雲端同步網址（貼上後，改的菜單會同步到別台裝置）</label>
-    <input type="text" id="syncUrl" placeholder="貼上 Apps Script 網址（可留空只存本機）">
+    <p class="mnote" style="margin-top:0">雲端同步已內建，改完存檔即時發布給所有客人，不需再設定網址。</p>
+    <input type="text" id="syncUrl" style="display:none">
     <div class="mrow">
       <button onclick="saveSync()">儲存同步網址</button>
       <button onclick="exportMenu()">匯出備份</button>
@@ -198,11 +198,13 @@ body.edit-on .manage{display:block}
       {id:'i21',name:'巴斯克',note:'芋頭',price:150},
       {id:'i22',name:'戚風蛋糕',note:'當日口味',price:130,flavors:[{id:'f5',name:'原味'},{id:'f6',name:'巧克力'},{id:'f7',name:'伯爵'}]}]},
   ]};
-  var M=null, SYNC='';
+  var SYNC='https://script.google.com/macros/s/AKfycbyKExj3Pvas2gvTWeW9hljiXt-mtVAEyAySFfyc5Qamm80DuED_3jzX2ucLrIP9KLZk/exec';        // 雲端網址（寫死，客人不需設定）
+  var EDIT_PW='0000';     // 編輯密碼
+  var canEdit=false;    // 是否已解鎖編輯
+  var M=null;
   try{ var raw=localStorage.getItem(LKEY); if(raw) M=JSON.parse(raw); }catch(e){}
   if(!M||!M.cats){ M=JSON.parse(JSON.stringify(SEED)); }
   if(!M.cats)M.cats=[]; if(!M.pays)M.pays=JSON.parse(JSON.stringify(SEED.pays)); if(M.notice==null)M.notice=SEED.notice; if(M.promo==null)M.promo=SEED.promo;
-  try{ SYNC=localStorage.getItem(UKEY)||''; }catch(e){}
   var uid=Date.now(); function nid(p){ return p+(uid++).toString(36); }
   var activeCat=null;
   function idx(ci){ for(var k=0;k<M.cats.length;k++) if(M.cats[k].id===ci) return k; return -1; }
@@ -210,8 +212,8 @@ body.edit-on .manage{display:block}
   function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function saveLocal(){ try{ localStorage.setItem(LKEY, JSON.stringify(M)); }catch(e){} }
   function pushSync(){ if(!SYNC)return; fetch(SYNC,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(M)}).catch(function(){}); }
-  function persist(){ M.updated=Date.now(); saveLocal(); pushSync(); }
-  function pullSync(cb){ if(!SYNC){cb&&cb();return;} fetch(SYNC).then(function(r){return r.json();}).then(function(d){ var rHas=d&&d.cats&&d.cats.length; var lHas=M&&M.cats&&M.cats.length; var ru=(d&&d.updated)||0,lu=(M&&M.updated)||0; if(rHas&&ru>lu){ M=d; if(!M.pays)M.pays=[]; saveLocal(); } else if(lHas&&(!rHas||lu>ru)){ pushSync(); } cb&&cb(); }).catch(function(){cb&&cb();}); }
+  function persist(){ M.updated=Date.now(); saveLocal(); if(canEdit) pushSync(); }
+  function pullSync(cb){ if(!SYNC){cb&&cb();return;} fetch(SYNC).then(function(r){return r.json();}).then(function(d){ var rHas=d&&d.cats&&d.cats.length; if(rHas){ if(!canEdit){ M=d; if(!M.pays)M.pays=[]; saveLocal(); } else { var ru=(d&&d.updated)||0,lu=(M&&M.updated)||0; if(ru>lu){ M=d; if(!M.pays)M.pays=[]; saveLocal(); } } } else if(canEdit){ pushSync(); } cb&&cb(); }).catch(function(){cb&&cb();}); }
 
   var $=function(s){return document.querySelector(s);};
   function render(){
@@ -375,10 +377,23 @@ body.edit-on .manage{display:block}
   document.addEventListener('pointercancel', endDrag);
 
   var editToggle=$('#editToggle');
-  editToggle.addEventListener('click', function(){ document.body.classList.toggle('edit-on'); editToggle.textContent=document.body.classList.contains('edit-on')?'✓ 完成編輯':'✏️ 編輯'; });
+  editToggle.addEventListener('click', function(){
+    if(!document.body.classList.contains('edit-on')){
+      if(!canEdit){
+        var p=prompt('請輸入編輯密碼');
+        if(p==null) return;
+        if(p!==EDIT_PW){ alert('密碼錯誤'); return; }
+        canEdit=true;
+      }
+      // 進編輯前先抓一次雲端最新，避免蓋掉別台剛改的
+      pullSync(function(){ document.body.classList.add('edit-on'); editToggle.textContent='✓ 完成編輯'; render(); });
+    } else {
+      document.body.classList.remove('edit-on'); editToggle.textContent='✏️ 編輯';
+    }
+  });
 
   var syncUrl=$('#syncUrl'), syncNote=$('#syncNote'); syncUrl.value=SYNC;
-  function updNote(){ syncNote.textContent=SYNC?'已連接雲端同步，改的菜單會同步到別台裝置（重新整理更新）。':'尚未設定雲端同步；目前只存這台裝置。建議定期「匯出備份」。'; }
+  function updNote(){ if(syncNote) syncNote.textContent='雲端同步已內建（客人掃碼即看到最新）。建議偶爾按「匯出備份」留一份。'; }
   window.saveSync=function(){ var v=syncUrl.value.trim(); if(!v){alert('請貼上網址');return;} SYNC=v; try{localStorage.setItem(UKEY,SYNC);}catch(e){} updNote(); pushSync(); alert('已儲存'); };
   window.exportMenu=function(){ try{ var bl=new Blob([JSON.stringify(M)],{type:'application/json'}); var a=document.createElement('a'); a.href=URL.createObjectURL(bl); a.download='DAFA菜單備份_'+new Date().toISOString().slice(0,10)+'.json'; a.click(); }catch(e){ alert('匯出失敗'); } };
   window.importMenu=function(inp){ var f=inp.files&&inp.files[0]; if(!f)return; var rd=new FileReader(); rd.onload=function(){ try{ var d=JSON.parse(rd.result); if(d&&d.cats){ M=d; if(!M.pays)M.pays=[]; persist(); render(); alert('已匯入'); } else alert('檔案格式不符'); }catch(e){ alert('讀取失敗'); } inp.value=''; }; rd.readAsText(f); };
