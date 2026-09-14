@@ -49,6 +49,16 @@ section{padding:22px 0 4px}
 .promo.empty{display:none}
 body.edit-on .promo.empty{display:block;opacity:.7}
 .promo .pttl{font-size:14px;font-weight:900;color:var(--blue);margin-bottom:4px}
+.promo .plist{display:flex;flex-direction:column;gap:8px}
+.promo .pitem{display:flex;gap:7px;align-items:flex-start;font-size:13px;color:#2A3E66;font-weight:700;line-height:1.5}
+.promo .pdot{color:var(--blue);font-weight:900;line-height:1.5}
+.promo .ptx{flex:1}
+.promo .ptx b{color:var(--blue)}
+.promo .pbd{display:block;font-weight:600;color:#3a4a6a;font-size:12.5px;margin-top:1px}
+.promo .pact{display:none;gap:5px;flex-shrink:0}
+body.edit-on .promo .pact{display:flex}
+.promo .pact button{background:#fff;border:1.5px solid var(--blue);color:var(--blue);border-radius:6px;font-size:11px;font-weight:800;padding:3px 8px;cursor:pointer}
+.promo .pact button.pdel{border-color:#e2b3ab;color:#C0392B}
 .promo .pbody{font-size:13px;font-weight:700;color:#2A3E66;line-height:1.6;white-space:pre-line}
 .promo .pedit,.notice .nedit2{display:none}
 body.edit-on .promo .pedit{display:inline-block;margin-top:8px;background:#fff;border:1.5px solid var(--blue);color:var(--blue);border-radius:7px;font-size:11.5px;font-weight:800;padding:4px 10px;cursor:pointer}
@@ -167,7 +177,7 @@ body.edit-on .manage{display:block}
   var LKEY='dafaMenu_v6', UKEY='dafaMenuSync_v1';
   var SEED={updated:0,
     notice:'低消一杯飲料　·　客滿時用餐限時 1 小時',
-    promo:{title:'集點卡活動',body:'消費滿 $100 集一點，集滿一張免費兌換一份飲品或甜點！'},
+    promos:[{title:'集點卡活動',body:'消費滿 $100 集一點，集滿一張免費兌換一份飲品或甜點！'}],
     pays:[{id:'p1',label:'現金'},{id:'p2',label:'信用卡'},{id:'p3',label:'Apple Pay'},{id:'p4',label:'LINE Pay',off:true}],
     cats:[
     {id:'c1',name:'醒腦系',en:'CAFFEINE',items:[
@@ -204,7 +214,7 @@ body.edit-on .manage{display:block}
   var M=null;
   try{ var raw=localStorage.getItem(LKEY); if(raw) M=JSON.parse(raw); }catch(e){}
   if(!M||!M.cats){ M=JSON.parse(JSON.stringify(SEED)); }
-  if(!M.cats)M.cats=[]; if(!M.pays)M.pays=JSON.parse(JSON.stringify(SEED.pays)); if(M.notice==null)M.notice=SEED.notice; if(M.promo==null)M.promo=SEED.promo;
+  if(!M.cats)M.cats=[]; if(!M.pays)M.pays=JSON.parse(JSON.stringify(SEED.pays)); if(M.notice==null)M.notice=SEED.notice; normalizePromos();
   var uid=Date.now(); function nid(p){ return p+(uid++).toString(36); }
   var activeCat=null;
   function idx(ci){ for(var k=0;k<M.cats.length;k++) if(M.cats[k].id===ci) return k; return -1; }
@@ -216,15 +226,25 @@ body.edit-on .manage{display:block}
   function pullSync(cb){ if(!SYNC){cb&&cb();return;} fetch(SYNC).then(function(r){return r.json();}).then(function(d){ var rHas=d&&d.cats&&d.cats.length; if(rHas){ if(!canEdit){ M=d; if(!M.pays)M.pays=[]; saveLocal(); } else { var ru=(d&&d.updated)||0,lu=(M&&M.updated)||0; if(ru>lu){ M=d; if(!M.pays)M.pays=[]; saveLocal(); } } } else if(canEdit){ pushSync(); } cb&&cb(); }).catch(function(){cb&&cb();}); }
 
   var $=function(s){return document.querySelector(s);};
+  function normalizePromos(){
+    if(!M.promos){
+      if(M.promo && (M.promo.body||M.promo.title)) M.promos=[{title:M.promo.title||'活動',body:M.promo.body||''}];
+      else M.promos=[];
+    }
+  }
   function render(){
     if(activeCat==null || !M.cats.some(function(c){return c.id===activeCat;})) activeCat=M.cats.length?M.cats[0].id:null;
     $('#nav').innerHTML=M.cats.map(function(c){ return '<a href="javascript:void(0)" data-tab="'+c.id+'" class="'+(c.id===activeCat?'on':'')+'">'+esc(c.name)+'</a>'; }).join('');
     var html='';
-    var pr=M.promo||{};
-    html+='<div class="promo'+((pr.body)?'':' empty')+'">'+
-      '<div class="pttl">🎟 '+esc(pr.title||'活動訊息')+'</div>'+
-      '<div class="pbody">'+esc(pr.body||'（尚未設定活動內容，按下方「改活動」新增）')+'</div>'+
-      '<button class="pedit" data-promoedit="1">改活動</button></div>';
+    normalizePromos();
+    var ps=M.promos||[];
+    html+='<div class="promo'+(ps.length?'':' empty')+'">'+
+      '<div class="pttl">🎟 最新活動</div>'+
+      '<div class="plist">'+
+      (ps.length? ps.map(function(a,i){ return '<div class="pitem"><span class="pdot">•</span><span class="ptx"><b>'+esc(a.title||'')+'</b>'+(a.body?'<span class="pbd">'+esc(a.body)+'</span>':'')+'</span><span class="pact"><button data-promoedit="'+i+'">改</button><button class="pdel" data-promodel="'+i+'">刪</button></span></div>'; }).join('')
+        : '<div class="pbody" style="color:#7a8bb0">（尚未設定活動，按下方「新增活動」）</div>')+
+      '</div>'+
+      '<button class="pedit" data-promoadd="1">＋ 新增活動</button></div>';
     var news=[];
     M.cats.forEach(function(c){ (c.items||[]).forEach(function(it){ if(it.isNew && !it.sold) news.push({it:it,cat:c.name}); }); });
     if(news.length){
@@ -323,7 +343,9 @@ body.edit-on .manage{display:block}
     if((b=t.closest('[data-del]'))){ if(confirm('確定刪除這個品項？')){ M.cats[+b.dataset.ci].items.splice(+b.dataset.ii,1); persist(); render(); } return; }
     if((b=t.closest('[data-new]'))){ var it=M.cats[+b.dataset.ci].items[+b.dataset.ii]; it.isNew=!it.isNew; persist(); render(); return; }
     if((b=t.closest('[data-sold]'))){ var its=M.cats[+b.dataset.ci].items[+b.dataset.ii]; its.sold=!its.sold; persist(); render(); return; }
-    if((b=t.closest('[data-promoedit]'))){ var ptt=prompt('活動標題', (M.promo&&M.promo.title)||'集點卡活動'); if(ptt==null)return; var pbb=prompt('活動內容（可留空＝不顯示）', (M.promo&&M.promo.body)||''); if(pbb==null)return; M.promo={title:ptt.trim()||'活動訊息',body:pbb.trim()}; persist(); render(); return; }
+    if((b=t.closest('[data-promoadd]'))){ var at=prompt('活動標題（例：集點卡活動）'); if(at==null)return; at=at.trim(); if(!at)return; var ab=prompt('活動說明（可留空）')||''; M.promos=M.promos||[]; M.promos.push({title:at,body:ab.trim()}); persist(); render(); return; }
+    if((b=t.closest('[data-promoedit]'))){ var pi=+b.dataset.promoedit; var a0=(M.promos||[])[pi]||{}; var nt=prompt('活動標題', a0.title||''); if(nt==null)return; nt=nt.trim(); if(!nt)return; var nb=prompt('活動說明（可留空）', a0.body||''); if(nb==null)return; M.promos[pi]={title:nt,body:nb.trim()}; persist(); render(); return; }
+    if((b=t.closest('[data-promodel]'))){ if(confirm('刪除這個活動？')){ M.promos.splice(+b.dataset.promodel,1); persist(); render(); } return; }
     if((b=t.closest('[data-noticeedit]'))){ var nn2=prompt('菜單頂部提示（可留空不顯示）', M.notice||''); if(nn2!=null){ M.notice=nn2.trim(); persist(); render(); } return; }
     if((b=t.closest('[data-flavdel]'))){ M.cats[+b.dataset.ci].items[+b.dataset.ii].flavors.splice(+b.dataset.fi,1); persist(); render(); return; }
     if((b=t.closest('[data-flavtoggle]'))){ var ff=M.cats[+b.dataset.ci].items[+b.dataset.ii].flavors[+b.dataset.fi]; ff.sold=!ff.sold; persist(); render(); return; }
