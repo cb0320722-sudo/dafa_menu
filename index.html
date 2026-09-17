@@ -80,6 +80,8 @@ body.edit-on .eitem>.flavedit{display:flex}
 .fchip{background:var(--card);border:1.5px solid var(--orange-line);border-radius:999px;font-size:12px;font-weight:800;color:var(--brown);padding:4px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .fchip.soldf{opacity:.55;text-decoration:line-through}
 .fchip.addf{border-style:dashed;border-color:var(--orange);color:#B4470E}
+.fchip .fedit{color:#2A8A87;font-weight:900;font-size:12px}
+.fchip .fen{color:var(--brown-soft);font-weight:600;font-size:10.5px;margin-left:2px}
 .fchip .fx{color:#C0392B;font-weight:900;font-size:11px}
 .etools .seasonon{background:var(--blue);color:#fff;border-color:var(--blue)}
 .row .note{display:block;font-size:11.5px;color:var(--brown-soft);font-weight:600;margin-top:3px}
@@ -245,7 +247,7 @@ body.edit-on .manage{display:block}
   var MODE = /[?&]edit(=|&|$)/.test(Q) ? 'edit' : (/[?&]table=/.test(Q) ? 'order' : 'view');
   var TABLE=''; var _mt=Q.match(/[?&]table=([^&]+)/); if(_mt) TABLE=decodeURIComponent(_mt[1]);
   var canEdit=(MODE==='edit');
-  var APP_VERSION='2026-09-17-02';  // 每次更新 HTML 改這個號碼，客人手機會自動抓最新版
+  var APP_VERSION='2026-09-17-03';  // 每次更新 HTML 改這個號碼，客人手機會自動抓最新版
   var M=null;
   try{ var raw=localStorage.getItem(LKEY); if(raw) M=JSON.parse(raw); }catch(e){}
   if(!M||!M.cats){ M=JSON.parse(JSON.stringify(SEED)); }
@@ -320,7 +322,7 @@ body.edit-on .manage{display:block}
         var hidden=it.sold||(fl.length>0&&avail.length===0);
         var flView=(avail.length? '<div class="flav">'+(LANG==='en'?'Flavors: ':'口味：')+avail.map(function(x){return esc(tr(x,'name'));}).join('・')+'</div>':'');
         var flEdit='<div class="flavedit"><span class="flabel">口味細項：</span>'+
-          fl.map(function(x,fi){ return '<button class="fchip'+(x.sold?' soldf':'')+'" data-flavtoggle="1" data-ci="'+ci+'" data-ii="'+ii+'" data-fi="'+fi+'">'+esc(x.name)+'<span class="fx" data-flavdel="1" data-ci="'+ci+'" data-ii="'+ii+'" data-fi="'+fi+'">✕</span></button>'; }).join('')+
+          fl.map(function(x,fi){ return '<button class="fchip'+(x.sold?' soldf':'')+'" data-flavtoggle="1" data-ci="'+ci+'" data-ii="'+ii+'" data-fi="'+fi+'">'+esc(x.name)+(x.name_en?'<span class="fen">'+esc(x.name_en)+'</span>':'')+'<span class="fedit" data-flavren="1" data-ci="'+ci+'" data-ii="'+ii+'" data-fi="'+fi+'">✎</span><span class="fx" data-flavdel="1" data-ci="'+ci+'" data-ii="'+ii+'" data-fi="'+fi+'">✕</span></button>'; }).join('')+
           '<button class="fchip addf" data-flavadd="1" data-ci="'+ci+'" data-ii="'+ii+'">＋ 口味</button></div>';
         html+='<div class="eitem'+(hidden?' sold':'')+'" data-id="'+it.id+'">'+
           '<div class="etools"><button class="dragh" title="按住拖曳排序">⠿ 拖曳</button>'+
@@ -410,6 +412,7 @@ body.edit-on .manage{display:block}
     if((b=t.closest('[data-promodel]'))){ if(confirm('刪除這個活動？')){ M.promos.splice(+b.dataset.promodel,1); persist(); render(); } return; }
     if((b=t.closest('[data-noticeedit]'))){ var nn2=prompt('菜單頂部提示（中文，可留空不顯示）', M.notice||''); if(nn2!=null){ M.notice=nn2.trim(); var nn2e=prompt('菜單頂部提示（英文，可留空）', M.notice_en||''); if(nn2e!=null)M.notice_en=nn2e.trim(); persist(); render(); } return; }
     if((b=t.closest('[data-flavdel]'))){ M.cats[+b.dataset.ci].items[+b.dataset.ii].flavors.splice(+b.dataset.fi,1); persist(); render(); return; }
+    if((b=t.closest('[data-flavren]'))){ var itr=M.cats[+b.dataset.ci].items[+b.dataset.ii]; var fv=itr.flavors[+b.dataset.fi]; var nn=prompt('口味名稱（中文）', fv.name); if(nn==null)return; if(nn.trim())fv.name=nn.trim(); var ne=prompt('口味名稱（英文，可留空）', fv.name_en||''); if(ne!=null){ if(ne.trim())fv.name_en=ne.trim(); else delete fv.name_en; } persist(); render(); return; }
     if((b=t.closest('[data-flavtoggle]'))){ var ff=M.cats[+b.dataset.ci].items[+b.dataset.ii].flavors[+b.dataset.fi]; ff.sold=!ff.sold; persist(); render(); return; }
     if((b=t.closest('[data-flavadd]'))){ var na3=prompt('新增口味（多個用 、 分隔；要英文用「中文=English」，例：抹茶=Matcha、伯爵=Earl Grey）'); if(na3&&na3.trim()){ var itf=M.cats[+b.dataset.ci].items[+b.dataset.ii]; itf.flavors=itf.flavors||[]; na3.split(/[、,，]/).forEach(function(part){ part=part.trim(); if(!part)return; var seg=part.split('='); var fo={id:nid('f'),name:seg[0].trim()}; if(seg[1]&&seg[1].trim())fo.name_en=seg[1].trim(); itf.flavors.push(fo); }); persist(); render(); } return; }
     if((b=t.closest('[data-mv]'))){ var ci=+b.dataset.ci,ii=+b.dataset.ii,ar=M.cats[ci].items; var to=b.dataset.mv==='up'?ii-1:ii+1; if(to>=0&&to<ar.length){ var x=ar[ii];ar[ii]=ar[to];ar[to]=x; persist(); render(); } return; }
