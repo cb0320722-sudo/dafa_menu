@@ -40,7 +40,7 @@ section{padding:22px 0 4px}
 .shead .rule{flex:1;height:3px;background:repeating-linear-gradient(90deg,var(--orange) 0 8px,transparent 8px 14px);opacity:.5;border-radius:2px;min-width:20px}
 .row{display:flex;align-items:baseline;gap:8px;padding:11px 2px;border-bottom:1.5px dotted var(--orange-line)}
 .row:last-child{border-bottom:0}
-.row .nm{font-size:16px;font-weight:800;color:var(--brown);flex-shrink:0}
+.row .nm{font-size:16px;font-weight:800;color:var(--brown);flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
 .row .new{display:inline-block;font-size:10px;font-weight:900;color:#fff;background:var(--orange);padding:1.5px 7px;border-radius:999px;margin-left:7px;vertical-align:middle;letter-spacing:.04em}
 .row .season{display:inline-block;font-size:10px;font-weight:900;color:#fff;background:var(--blue);padding:1.5px 7px;border-radius:999px;margin-left:7px;vertical-align:middle;letter-spacing:.04em}
 .notice{background:var(--orange-soft);border:2px solid var(--orange-line);border-radius:12px;padding:11px 14px;margin:8px 0 4px;font-size:13.5px;font-weight:800;color:#B4470E;text-align:center;position:relative}
@@ -83,8 +83,8 @@ body.edit-on .eitem>.flavedit{display:flex}
 .fchip .fx{color:#C0392B;font-weight:900;font-size:11px}
 .etools .seasonon{background:var(--blue);color:#fff;border-color:var(--blue)}
 .row .note{display:block;font-size:11.5px;color:var(--brown-soft);font-weight:600;margin-top:3px}
-.row .lead{flex:1;border-bottom:2px dotted var(--orange-line);transform:translateY(-4px);min-width:10px}
-.row .pr{font-size:16px;font-weight:900;color:var(--orange);flex-shrink:0}
+.row .lead{flex:0 1 auto;border-bottom:2px dotted var(--orange-line);transform:translateY(-4px);min-width:12px;align-self:flex-end;margin-bottom:6px}
+.row .pr{font-size:16px;font-weight:900;color:var(--orange);flex:0 0 auto;white-space:nowrap}
 .row .pr::before{content:'$';font-size:11px;color:var(--brown-soft);margin-right:1px;vertical-align:.06em}
 .eitem{position:relative}
 .eitem.dragging{opacity:.4}
@@ -186,7 +186,7 @@ body.edit-on .manage{display:block}
     <div class="pt">付款方式 PAYMENT</div>
     <div class="pays" id="pays"></div>
     <div class="payedit" id="payedit"></div>
-    <div class="fine">價格如有調整，以現場公告為準。<br>謝謝光臨 · Thank you ♡</div>
+    <div class="fine" id="fineNote">價格如有調整，以現場公告為準。<br>謝謝光臨 · Thank you ♡</div>
   </div>
   <div class="manage">
     <h3>管理 · 雲端同步 &amp; 備份</h3>
@@ -245,6 +245,7 @@ body.edit-on .manage{display:block}
   var MODE = /[?&]edit(=|&|$)/.test(Q) ? 'edit' : (/[?&]table=/.test(Q) ? 'order' : 'view');
   var TABLE=''; var _mt=Q.match(/[?&]table=([^&]+)/); if(_mt) TABLE=decodeURIComponent(_mt[1]);
   var canEdit=(MODE==='edit');
+  var APP_VERSION='2026-09-17-02';  // 每次更新 HTML 改這個號碼，客人手機會自動抓最新版
   var M=null;
   try{ var raw=localStorage.getItem(LKEY); if(raw) M=JSON.parse(raw); }catch(e){}
   if(!M||!M.cats){ M=JSON.parse(JSON.stringify(SEED)); }
@@ -345,6 +346,7 @@ body.edit-on .manage{display:block}
         '<button class="offbtn'+(p.off?' on':'')+'" data-payoff="'+pi+'">'+(p.off?'不提供':'可用')+'</button>'+
         '<button data-payren="'+pi+'">改名</button><button class="del" data-paydel="'+pi+'">✕</button></div>'; }).join('')+
       '<div class="addbar" style="margin-top:8px"><button data-payadd="1">＋ 新增付款方式</button></div>';
+    var fn=document.getElementById('fineNote'); if(fn) fn.innerHTML=(LANG==='en'?'Prices may vary; final total at the counter.<br>Thank you ♡':'價格如有調整，以現場公告為準。<br>謝謝光臨 · Thank you ♡');
   }
 
   /* item modal */
@@ -489,14 +491,14 @@ body.edit-on .manage{display:block}
   function addLine(name,flavor,price){ cartAdd(name,flavor,price); if(flavor && /奶蓋/.test(flavor)) cartAdd('+奶蓋','',10); }
   var oFab,cartModal,flavModal;
   function buildOrderUI(){
-    var ban=document.createElement('div'); ban.className='tablebanner'; ban.textContent=(TABLE||'?')+' 號桌 · 手機點餐';
+    var ban=document.createElement('div'); ban.className='tablebanner'; ban.id='oBanner';
     document.body.insertBefore(ban, document.body.firstChild);
     oFab=document.createElement('button'); oFab.className='cartfab'; oFab.id='cartFab'; document.body.appendChild(oFab); oFab.onclick=openCart;
     cartModal=document.createElement('div'); cartModal.className='omodal';
-    cartModal.innerHTML='<div class="obox"><h3>'+(TABLE||'?')+' 號桌 · 確認點餐</h3><div id="cartList"></div>'+
-      '<div class="ctotal"><span>合計</span><b id="cartTotal">$0</b></div>'+
-      '<p class="odis">此為參考金額，實際以櫃台結帳為準（可能有折扣）。</p>'+
-      '<div class="oacts"><button id="cartMore">繼續點餐</button><button id="cartSend" class="send">送出到櫃台</button></div></div>';
+    cartModal.innerHTML='<div class="obox"><h3 id="cartTitle"></h3><div id="cartList"></div>'+
+      '<div class="ctotal"><span id="cartTotLbl"></span><b id="cartTotal">$0</b></div>'+
+      '<p class="odis" id="cartDis"></p>'+
+      '<div class="oacts"><button id="cartMore"></button><button id="cartSend" class="send"></button></div></div>';
     document.body.appendChild(cartModal);
     cartModal.addEventListener('click',function(e){ if(e.target===cartModal) cartModal.classList.remove('on'); });
     cartModal.querySelector('#cartMore').onclick=function(){ cartModal.classList.remove('on'); };
@@ -507,13 +509,24 @@ body.edit-on .manage{display:block}
       renderCart(); renderCartFab();
     });
     flavModal=document.createElement('div'); flavModal.className='omodal';
-    flavModal.innerHTML='<div class="obox"><h3 id="flavT">選擇口味</h3><div id="flavList" class="flavpick"></div><button id="flavCancel" style="width:100%;border:0;border-radius:10px;background:#eee;color:#555;font-family:inherit;font-size:14px;font-weight:800;padding:12px;cursor:pointer">取消</button></div>';
+    flavModal.innerHTML='<div class="obox"><h3 id="flavT">選擇口味</h3><div id="flavList" class="flavpick"></div><button id="flavCancel" style="width:100%;border:0;border-radius:10px;background:#eee;color:#555;font-family:inherit;font-size:14px;font-weight:800;padding:12px;cursor:pointer"></button></div>';
     document.body.appendChild(flavModal);
     flavModal.addEventListener('click',function(e){ if(e.target===flavModal) flavModal.classList.remove('on'); });
     flavModal.querySelector('#flavCancel').onclick=function(){ flavModal.classList.remove('on'); };
+    updateOrderLang();
+  }
+  function updateOrderLang(){
+    var en=(LANG==='en'), t=(TABLE||'?');
+    var b1=document.getElementById('oBanner'); if(b1) b1.textContent= en?('Table '+t+' · Mobile order'):(t+' 號桌 · 手機點餐');
+    var b2=document.getElementById('cartTitle'); if(b2) b2.textContent= en?('Table '+t+' · Review order'):(t+' 號桌 · 確認點餐');
+    var b3=document.getElementById('cartTotLbl'); if(b3) b3.textContent= en?'Total':'合計';
+    var b4=document.getElementById('cartDis'); if(b4) b4.textContent= en?'Estimated total; final amount at the counter (discounts may apply).':'此為參考金額，實際以櫃台結帳為準（可能有折扣）。';
+    var b5=document.getElementById('cartMore'); if(b5) b5.textContent= en?'Add more':'繼續點餐';
+    var b6=document.getElementById('cartSend'); if(b6 && b6.textContent!=='送出中…' && b6.textContent!=='Sending…') b6.textContent= en?'Send to counter':'送出到櫃台';
+    var b7=document.getElementById('flavCancel'); if(b7) b7.textContent= en?'Cancel':'取消';
     renderCartFab();
   }
-  function renderCartFab(){ if(!oFab) return; var n=0,t=0; cart.forEach(function(l){ n+=l.q; t+=l.p*l.q; }); oFab.textContent = n? ('🛒 查看點餐 ('+n+') · $'+t) : '🛒 尚未點餐'; }
+  function renderCartFab(){ if(!oFab) return; var n=0,t=0; cart.forEach(function(l){ n+=l.q; t+=l.p*l.q; }); oFab.textContent = n? ((LANG==='en'?'🛒 View order (':'🛒 查看點餐 (')+n+') · $'+t) : (LANG==='en'?'🛒 No items yet':'🛒 尚未點餐'); }
   function renderCart(){
     var el=cartModal.querySelector('#cartList'), t=0;
     if(!cart.length){ el.innerHTML='<div class="cempty">還沒有點任何品項</div>'; cartModal.querySelector('#cartTotal').textContent='$0'; cartModal.querySelector('#cartSend').disabled=true; return; }
@@ -523,11 +536,11 @@ body.edit-on .manage{display:block}
       '<span class="cp">$'+(l.p*l.q)+'</span></div>'; }).join('');
     cartModal.querySelector('#cartTotal').textContent='$'+t;
   }
-  function openCart(){ renderCart(); cartModal.classList.add('on'); }
+  function openCart(){ updateOrderLang(); renderCart(); cartModal.classList.add('on'); }
   function openFlavorPick(item){
     var avail=(item.flavors||[]).filter(function(x){return !x.sold;});
-    flavModal.querySelector('#flavT').textContent=item.name+' · 選擇口味';
-    flavModal.querySelector('#flavList').innerHTML=avail.map(function(x){ return '<button data-fn="'+esc(x.name).replace(/"/g,'&quot;')+'">'+esc(x.name)+'</button>'; }).join('');
+    flavModal.querySelector('#flavT').textContent=tr(item,'name')+(LANG==='en'?' · Choose flavor':' · 選擇口味');
+    flavModal.querySelector('#flavList').innerHTML=avail.map(function(x){ return '<button data-fn="'+esc(x.name).replace(/"/g,'&quot;')+'">'+esc(tr(x,'name'))+'</button>'; }).join('');
     Array.prototype.forEach.call(flavModal.querySelectorAll('#flavList button'),function(b){
       b.onclick=function(){ addLine(item.name, b.getAttribute('data-fn'), priceNum(item.price)); flavModal.classList.remove('on'); };
     });
@@ -536,15 +549,15 @@ body.edit-on .manage{display:block}
   function sendOrder(){
     if(!cart.length) return;
     if(!ORDER_SYNC){ alert('尚未設定「桌單雲端網址」，請店家先在程式裡填入 ORDER_SYNC。'); return; }
-    var btn=cartModal.querySelector('#cartSend'); btn.disabled=true; btn.textContent='送出中…';
+    var btn=cartModal.querySelector('#cartSend'); btn.disabled=true; btn.textContent=(LANG==='en'?'Sending…':'送出中…');
     var body=JSON.stringify({action:'add',table:TABLE,items:cart.map(function(l){return {n:l.n,sub:l.flavor,p:l.p,q:l.q};})});
     // no-cors 送出：不等回應，避免 Apps Script 回應慢卡住
     fetch(ORDER_SYNC,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body}).catch(function(){});
     // 直接視為送出成功（單已送往雲端）
     setTimeout(function(){
-      btn.textContent='送出到櫃台'; btn.disabled=false;
+      btn.textContent=(LANG==='en'?'Send to counter':'送出到櫃台'); btn.disabled=false;
       cart=[]; renderCart(); renderCartFab(); cartModal.classList.remove('on');
-      alert('已送出到櫃台！可以繼續加點，或直接到櫃台結帳。');
+      alert(LANG==='en'?'Sent to the counter! Add more, or pay at the counter.':'已送出到櫃台！可以繼續加點，或直接到櫃台結帳。');
     }, 600);
   }
   if(MODE==='order'){
@@ -559,8 +572,34 @@ body.edit-on .manage{display:block}
   }
 
   var langBtn=document.getElementById('langBtn');
-  if(langBtn){ langBtn.textContent=(LANG==='en'?'中文':'EN'); langBtn.onclick=function(){ LANG=(LANG==='en'?'zh':'en'); try{localStorage.setItem('dafaLang',LANG);}catch(e){} langBtn.textContent=(LANG==='en'?'中文':'EN'); render(); }; }
+  if(langBtn){ langBtn.textContent=(LANG==='en'?'中文':'EN'); langBtn.onclick=function(){ LANG=(LANG==='en'?'zh':'en'); try{localStorage.setItem('dafaLang',LANG);}catch(e){} langBtn.textContent=(LANG==='en'?'中文':'EN'); render(); if(document.getElementById('oBanner')) updateOrderLang(); }; }
   render();
+  // ===== 版本自動更新：偵測到新版就自動重整（避免看到舊版）=====
+  (function(){
+    try{
+      var seen=localStorage.getItem('dafaVer');
+      if(seen && seen!==APP_VERSION){ /* 本機是新版，剛更新過 */ }
+      localStorage.setItem('dafaVer', APP_VERSION);
+    }catch(e){}
+    function checkVersion(){
+      // 加時間戳繞過快取，抓自己這支 HTML，比對裡面的 APP_VERSION
+      fetch(location.pathname+'?_v='+Date.now(), {cache:'no-store'})
+        .then(function(r){return r.text();})
+        .then(function(html){
+          var m=html.match(/APP_VERSION='([^']+)'/);
+          if(m && m[1] && m[1]!==APP_VERSION){
+            // 有新版且與目前不同 → 重新載入（跳過快取）
+            location.reload(true);
+          }
+        }).catch(function(){});
+    }
+    // 開啟後 20 秒檢查一次，之後每 5 分鐘檢查一次
+    setTimeout(checkVersion, 20000);
+    setInterval(checkVersion, 300000);
+    // 從背景切回前景時也檢查一次（客人重新拿起手機）
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) checkVersion(); });
+  })();
+
   pullSync(function(){ render(); });
 })();
 </script>
