@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DAFA 配方庫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{--cream:#F8F4EB;--orange:#FF6E12;--orange-soft:#FCE3CE;--orange-line:#F6C79E;--brown:#5C3618;--brown-soft:#8A6A4F;--blue:#194AAD;--card:#FFFDF8;--ok:#2f8f5b;--dev:#c98a1e}
+html,body{margin:0;background:var(--cream);color:var(--brown);font-family:'Archivo','PingFang TC','Noto Sans TC','Microsoft JhengHei',sans-serif;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.checker{height:16px;background:repeating-conic-gradient(var(--orange) 0 25%,var(--cream) 0 50%) 0 0/32px 32px}
+.wrap{max-width:640px;margin:0 auto;padding:0 14px 90px}
+.hero{text-align:center;padding:20px 10px 10px}
+.hero h1{margin:0;font-size:26px;font-weight:900;color:var(--orange);letter-spacing:1px}
+.hero .sub{font-size:12px;font-weight:700;color:var(--brown-soft);letter-spacing:3px;text-transform:uppercase;margin-top:4px}
+.bar{position:sticky;top:0;z-index:20;background:rgba(248,244,235,.95);backdrop-filter:blur(8px);margin:0 -14px;padding:10px 14px;border-bottom:2px solid var(--orange-line);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar input.search{flex:1;min-width:120px;border:1.5px solid var(--orange-line);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:14px;background:#fff}
+.bar select{border:1.5px solid var(--orange-line);border-radius:10px;padding:10px;font-family:inherit;font-size:13px;font-weight:700;background:#fff;color:var(--brown)}
+.tools{display:flex;gap:6px;align-items:center;margin:8px 0 0}
+.tools button{border:1.5px solid var(--orange-line);background:#fff;border-radius:8px;font-family:inherit;font-size:12px;font-weight:800;color:var(--brown);padding:6px 10px;cursor:pointer}
+.tools .exp{color:var(--brown-soft)}
+.catrow{display:flex;gap:7px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}.catrow::-webkit-scrollbar{display:none}
+.catrow button{flex-shrink:0;border:1.5px solid var(--orange-line);background:#fff;border-radius:999px;padding:7px 14px;font-family:inherit;font-size:13px;font-weight:800;color:var(--brown);white-space:nowrap;cursor:pointer}
+.catrow button.on{background:var(--orange);color:#fff;border-color:var(--orange)}
+.missing{background:#FFF4D6;border:2px solid #E0B84A;border-radius:12px;padding:11px 13px;margin:12px 0;font-size:13px;color:#7a5b12;line-height:1.7;display:none}
+.missing.show{display:block}
+.missing b{color:#8a5b12}
+.missing .mk{display:inline-block;margin-top:8px;background:#E0B84A;color:#5a4410;border:0;border-radius:8px;font-family:inherit;font-size:12.5px;font-weight:800;padding:7px 12px;cursor:pointer}
+.missing .tag{display:inline-block;background:#fff;border:1px solid #E0B84A;border-radius:999px;padding:1px 8px;margin:2px 3px 0 0;font-size:12px;font-weight:700}
+.rcard{background:var(--card);border:1.5px solid var(--orange-line);border-radius:14px;margin-bottom:10px;overflow:hidden}
+.rhd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:13px 14px;cursor:pointer;user-select:none}
+.rhd .chev{margin-left:auto;color:var(--orange);font-size:13px;font-weight:900;transition:transform .18s;flex-shrink:0}
+.rcard.open .rhd .chev{transform:rotate(90deg)}
+.rhd .nm{font-size:17px;font-weight:900;color:var(--brown)}
+.rhd .cat{font-size:11px;font-weight:800;color:var(--orange);background:var(--orange-soft);padding:2px 9px;border-radius:999px}
+.rhd .st{font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px}
+.st.dev{color:#fff;background:var(--dev)}.st.live{color:#fff;background:var(--ok)}
+.rhd .empty-dot{font-size:11px;font-weight:800;color:#B4470E;background:#FFE6D2;padding:2px 9px;border-radius:999px}
+.rbody{display:none;padding:0 14px 14px}
+.rcard.open .rbody{display:block}
+.forms{font-size:12px;color:var(--brown-soft);font-weight:700;margin:0 0 10px}
+.rtable{width:100%;border-collapse:collapse;font-size:13.5px}
+.rtable th,.rtable td{border:1px solid var(--orange-line);padding:6px 8px;text-align:center}
+.rtable th{background:var(--orange-soft);color:var(--brown);font-weight:800;font-size:12px}
+.rtable td.mat{text-align:left;font-weight:700}
+.rtable td.u{color:var(--brown-soft);font-size:12px}
+.emptymat{font-size:13px;color:var(--brown-soft);background:#FBF3E6;border:1.5px dashed var(--orange-line);border-radius:10px;padding:12px;text-align:center}
+.rsteps{margin:10px 0 0;font-size:13px;line-height:1.6}
+.rsteps .lb{font-size:11px;font-weight:800;color:var(--brown-soft);letter-spacing:.5px;margin-bottom:2px}
+.rsteps .bd{white-space:pre-line;color:#4a3524}
+.ract{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.ract button{border:1.5px solid var(--orange-line);background:#fff;border-radius:8px;font-family:inherit;font-size:12.5px;font-weight:800;color:var(--brown);padding:7px 12px;cursor:pointer}
+.ract .scale{background:var(--blue);color:#fff;border-color:var(--blue)}
+.ract .del{color:#C0392B;border-color:#e2b3ab}
+.addfab{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:40;background:var(--orange);color:#fff;border:0;border-radius:999px;font-family:inherit;font-size:15px;font-weight:800;padding:14px 22px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.modal{position:fixed;inset:0;background:rgba(40,24,10,.55);display:none;align-items:flex-end;justify-content:center;z-index:100}
+.modal.on{display:flex}
+@media(min-width:640px){.modal{align-items:center;padding:14px}}
+.box{background:#fff;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px}
+@media(min-width:640px){.box{border-radius:18px}}
+.box h3{margin:0 0 12px;font-size:17px;color:var(--brown)}
+.fld{display:block;font-size:12.5px;font-weight:800;color:var(--brown-soft);margin:10px 0 4px}
+.box input[type=text],.box textarea,.box select{width:100%;box-sizing:border-box;border:1.5px solid var(--orange-line);border-radius:8px;font-family:inherit;font-size:14px;padding:9px;background:#fff;color:var(--brown)}
+.box textarea{min-height:64px;resize:vertical}
+.formrow{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0}
+.formrow label{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700}
+.matbox{border:1.5px solid var(--orange-line);border-radius:10px;overflow:hidden;margin-top:4px}
+.matbox table{width:100%;border-collapse:collapse}
+.matbox th,.matbox td{border:1px solid var(--orange-line);padding:4px;text-align:center}
+.matbox th{background:var(--orange-soft);font-size:11px;font-weight:800;color:var(--brown)}
+.matbox input{width:100%;border:0;background:transparent;font-family:inherit;font-size:13px;text-align:center;padding:6px 2px;color:var(--brown)}
+.matbox input.mn{text-align:left;font-weight:700}
+.matbox .drop{color:#C0392B;font-weight:900;cursor:pointer;background:none;border:0;font-size:14px}
+.addmat{margin-top:8px;background:var(--orange-soft);border:2px dashed var(--orange);color:#B4470E;border-radius:9px;font-family:inherit;font-size:13px;font-weight:800;padding:9px 14px;cursor:pointer;width:100%}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;position:sticky;bottom:0;background:#fff;padding-top:10px}
+.acts button{border:0;border-radius:9px;font-family:inherit;font-size:15px;font-weight:800;padding:12px 18px;cursor:pointer}
+.acts .ok{background:var(--orange);color:#fff}.acts .no{background:#eee;color:#666}
+.scalebar{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap}
+.scalebar input{width:70px;border:1.5px solid var(--orange-line);border-radius:8px;padding:8px;font-family:inherit;font-size:15px;text-align:center;font-weight:800}
+.scalebar select{border:1.5px solid var(--orange-line);border-radius:8px;padding:8px;font-family:inherit;font-weight:700}
+.hint{font-size:12px;color:var(--brown-soft);margin-top:8px;line-height:1.5}
+.manage{margin-top:16px;background:var(--card);border:1.5px solid var(--orange-line);border-radius:12px;padding:12px}
+.manage h4{margin:0 0 8px;font-size:13px;color:var(--brown)}
+.manage .mrow{display:flex;gap:8px;flex-wrap:wrap}
+.manage button,.manage label{background:var(--orange-soft);border:1.5px solid var(--orange);color:#B4470E;border-radius:8px;font-family:inherit;font-size:12.5px;font-weight:800;padding:8px 12px;cursor:pointer}
+.empty{text-align:center;color:var(--brown-soft);font-size:14px;padding:30px 0}
+</style>
+</head>
+<body>
+<div class="checker"></div>
+<div class="wrap">
+  <div class="hero"><h1>DAFA 配方庫</h1><div class="sub">Recipe Book · 內部用</div></div>
+  <div class="bar">
+    <input class="search" id="search" placeholder="搜尋品名 / 材料…">
+    <select id="stFilter"><option value="">全部狀態</option><option value="live">已上架</option><option value="dev">研發中</option></select>
+  </div>
+  <div class="tools">
+    <button id="expandAll">全部展開</button>
+    <button id="collapseAll">全部收合</button>
+    <span class="exp" id="countLbl"></span>
+  </div>
+  <div class="catrow" id="catrow"></div>
+  <div class="missing" id="missing"></div>
+  <div id="list"></div>
+  <div class="manage">
+    <h4>資料 · 備份 &amp; 同步</h4>
+    <p class="hint" id="syncNote" style="margin-top:0"></p>
+    <div class="mrow">
+      <button onclick="pullNow()">重新整理雲端</button>
+      <button onclick="exportData()">匯出備份</button>
+      <label>匯入備份<input type="file" accept="application/json" style="display:none" onchange="importData(this)"></label>
+    </div>
+    <p class="hint" id="syncEdit" style="margin-top:10px"></p>
+    <input type="text" id="syncUrl" placeholder="（進階）自訂雲端同步網址" style="width:100%;box-sizing:border-box;border:1.5px solid var(--orange-line);border-radius:8px;padding:9px;margin-top:4px;font-family:inherit;font-size:13px;display:none">
+    <div class="mrow" id="syncBtns" style="margin-top:6px;display:none"><button onclick="saveSync()">儲存自訂網址</button></div>
+    <button onclick="toggleAdv()" style="background:none;border:0;color:var(--brown-soft);font-size:11px;font-weight:700;margin-top:8px;cursor:pointer;padding:0">進階設定 ▾</button>
+  </div>
+</div>
+<button class="addfab" id="addBtn">＋ 新增配方</button>
+
+<div class="modal" id="editModal"><div class="box">
+  <h3 id="emTitle">新增配方</h3>
+  <label class="fld">品名</label><input type="text" id="fName" placeholder="例：茉純茶">
+  <label class="fld">分類</label><input type="text" id="fCat" list="catlist" placeholder="例：ㄚ就想喝系"><datalist id="catlist"></datalist>
+  <label class="fld">狀態</label><select id="fStatus"><option value="dev">研發中</option><option value="live">已上架</option></select>
+  <label class="fld">供應形式</label>
+  <div class="formrow">
+    <label><input type="checkbox" id="fIce" checked> 冰</label>
+    <label><input type="checkbox" id="fHot"> 熱</label>
+    <label><input type="checkbox" id="fTo"> 外帶</label>
+  </div>
+  <label class="fld" id="toLbl" style="display:none">外帶容量標註（例：120oz）</label>
+  <input type="text" id="fToCap" placeholder="例：120oz" style="display:none">
+  <label class="fld">材料與份量</label>
+  <div class="matbox"><table id="matTable"></table></div>
+  <button class="addmat" id="addMat">＋ 新增材料</button>
+  <label class="fld">步驟（可留空）</label><textarea id="fSteps" placeholder="例：茶泡好 → 加糖水 → 冰塊 → 均質"></textarea>
+  <label class="fld">備註（可留空）</label><textarea id="fNote" placeholder="例：均質後口感更滑；外帶用 120oz 杯"></textarea>
+  <div class="acts"><button class="no" id="emCancel">取消</button><button class="ok" id="emSave">儲存</button></div>
+</div></div>
+
+<div class="modal" id="scaleModal"><div class="box">
+  <h3 id="scTitle">份量放大</h3>
+  <div class="scalebar">
+    <span>形式</span><select id="scForm"></select>
+    <span>杯數</span><input type="number" id="scN" value="10" min="1" inputmode="numeric">
+    <span>杯</span>
+  </div>
+  <div class="matbox"><table id="scTable"></table></div>
+  <p class="hint">依單杯配方 ×杯數自動換算，備料用。空白的材料表示該形式沒這項。</p>
+  <div class="acts"><button class="ok" id="scClose">關閉</button></div>
+</div></div>
+
+<script>
+(function(){
+  var LKEY='dafaRecipes_v1', UKEY='dafaRecipeSync_v1', IMPKEY='dafaRecipeImported_v2';
+
+  /* ===== 雲端同步網址（寫死在程式內） ===== */
+  // 菜單雲端（讀取用）：拿來對照哪些菜單品項還沒建配方
+  var MENU_SYNC='https://script.google.com/macros/s/AKfycbyKExj3Pvas2gvTWeW9hljiXt-mtVAEyAySFfyc5Qamm80DuED_3jzX2ucLrIP9KLZk/exec';
+  // 配方庫自己的雲端（多裝置共用）：部署專屬 Apps Script 後把 /exec 網址填在這裡
+  var RECIPE_SYNC='';   // ← 之後貼上配方庫專屬網址即可全店共用
+
+  /* ===== 菜單品項快照（初次自動匯入用；之後以菜單雲端為準） ===== */
+  var MENU_SNAPSHOT=[
+    {c:'醒腦系',n:'濃縮'},{c:'醒腦系',n:'打發美式'},{c:'醒腦系',n:'蒸氣美式'},{c:'醒腦系',n:'茉莉美式'},{c:'醒腦系',n:'蜜桃美式'},{c:'醒腦系',n:'打發拿鐵 I/H'},{c:'醒腦系',n:'咖啡糖拿鐵 I/H'},{c:'醒腦系',n:'蘋果美式🍎'},{c:'醒腦系',n:'蜂蜜檸檬美式🐝🍋'},
+    {c:'哦一系',n:'芒芒人海'},{c:'哦一系',n:'西瓜爺爺'},{c:'哦一系',n:'相芋椰島'},{c:'哦一系',n:'茉莉芒夏'},
+    {c:'ㄚ就想喝系',n:'打發鮮奶茶'},{c:'ㄚ就想喝系',n:'茉莉奶'},{c:'ㄚ就想喝系',n:'蜜桃紅'},{c:'ㄚ就想喝系',n:'茉莉綠茶'},{c:'ㄚ就想喝系',n:'蜜桃蘋果冰茶'},
+    {c:'睡得著系',n:'薄荷茶'},{c:'睡得著系',n:'森嶼草本茶'},
+    {c:'嘴饞系',n:'貝殼馬卡龍'},{c:'嘴饞系',n:'圓形馬卡龍'},{c:'嘴饞系',n:'巴斯克（原味）'},{c:'嘴饞系',n:'巴斯克（口味）'},{c:'嘴饞系',n:'戚風蛋糕'},
+    {c:'Milky系',n:'宇治抹茶歐蕾 I/H'},{c:'Milky系',n:'焙茶歐蕾 I/H'},{c:'Milky系',n:'可可歐蕾 I/H'},{c:'Milky系',n:'紅烏龍雲朵歐蕾 I'},{c:'Milky系',n:'純 抹茶🍵 I/H'}
+  ];
+  var MENU_CATS=['醒腦系','哦一系','ㄚ就想喝系','睡得著系','嘴饞系','Milky系'];
+
+  var SEED={updated:0,recipes:[
+    {id:'r1',name:'茉純茶',cat:'ㄚ就想喝系',status:'live',forms:{ice:true,hot:true,to:true},toCap:'120oz',
+     mats:[{n:'茶',ice:'170',hot:'180',to:'200',u:'g'},{n:'水',ice:'50',hot:'50',to:'85',u:'g'},{n:'糖',ice:'15',hot:'15',to:'20',u:'g'},{n:'冰',ice:'80',hot:'',to:'80',u:'g'}],
+     steps:'',note:'可無糖（示範用配方，可自行修改或刪除）'}
+  ]};
+
+  var M=null,SYNC=RECIPE_SYNC||'';
+  try{var raw=localStorage.getItem(LKEY);if(raw)M=JSON.parse(raw);}catch(e){}
+  if(!M||!M.recipes)M=JSON.parse(JSON.stringify(SEED));
+  if(!M.recipes)M.recipes=[];
+  // 自訂網址優先（進階）；否則用寫死的 RECIPE_SYNC
+  try{var custom=localStorage.getItem(UKEY)||'';if(custom)SYNC=custom;}catch(e){}
+
+  var MENU_ITEMS=MENU_SNAPSHOT.slice();   // 之後由菜單雲端覆蓋
+  var uid=Date.now();function nid(p){return p+(uid++).toString(36);}
+  var curCat='',curSearch='',curStatus='',editId=null,matRows=[],openIds={};
+
+  function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function norm(s){return String(s||'').replace(/\s+/g,'').trim();}
+  function saveLocal(){try{localStorage.setItem(LKEY,JSON.stringify(M));}catch(e){}}
+  function pushSync(){if(!SYNC)return;fetch(SYNC,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(M)}).catch(function(){});}
+  function persist(){M.updated=Date.now();saveLocal();pushSync();}
+  function pullSync(cb){if(!SYNC){cb&&cb();return;}fetch(SYNC).then(function(r){return r.json();}).then(function(d){if(d&&d.recipes&&(d.updated||0)>(M.updated||0)){M=d;if(!M.recipes)M.recipes=[];saveLocal();}cb&&cb();}).catch(function(){cb&&cb();});}
+  var $=function(s){return document.querySelector(s);};
+
+  /* ---- 初次自動匯入菜單品項為「配方骨架」 ---- */
+  function haveName(name){var k=norm(name);return M.recipes.some(function(r){return norm(r.name)===k;});}
+  function skeleton(it){return {id:nid('r'),name:it.n,cat:it.c,status:'live',forms:{ice:true,hot:false,to:false},toCap:'',mats:[],steps:'',note:''};}
+  function importOnce(){
+    var done=false;try{done=localStorage.getItem(IMPKEY)==='1';}catch(e){}
+    if(done)return false;
+    var added=0;
+    MENU_SNAPSHOT.forEach(function(it){if(!haveName(it.n)){M.recipes.push(skeleton(it));added++;}});
+    try{localStorage.setItem(IMPKEY,'1');}catch(e){}
+    if(added){persist();}
+    return added>0;
+  }
+
+  /* ---- 菜單品項清單（供對照提醒） ---- */
+  function menuItemsFromCloud(d){
+    var out=[];if(!d||!d.cats)return out;
+    d.cats.forEach(function(c){(c.items||[]).forEach(function(it){if(it&&it.name)out.push({c:c.name||'',n:it.name});});});
+    return out;
+  }
+  function pullMenu(cb){
+    if(!MENU_SYNC){cb&&cb();return;}
+    fetch(MENU_SYNC).then(function(r){return r.json();}).then(function(d){
+      var arr=menuItemsFromCloud(d);if(arr.length)MENU_ITEMS=arr;cb&&cb();
+    }).catch(function(){cb&&cb();});
+  }
+
+  function allCats(){var set={};MENU_CATS.forEach(function(c){set[c]=1;});M.recipes.forEach(function(r){if(r.cat)set[r.cat]=1;});MENU_ITEMS.forEach(function(it){if(it.c)set[it.c]=1;});return Object.keys(set);}
+  function renderCats(){
+    var cats=allCats();
+    $('#catrow').innerHTML='<button class="'+(curCat===''?'on':'')+'" data-cat="">全部</button>'+cats.map(function(c){return '<button class="'+(curCat===c?'on':'')+'" data-cat="'+esc(c)+'">'+esc(c)+'</button>';}).join('');
+    $('#catlist').innerHTML=cats.map(function(c){return '<option value="'+esc(c)+'">';}).join('');
+  }
+  function formsLabel(r){var a=[];if(r.forms.ice)a.push('冰');if(r.forms.hot)a.push('熱');if(r.forms.to)a.push('外帶'+(r.toCap?'('+esc(r.toCap)+')':''));return a.join(' · ')||'—';}
+  function activeForms(r){var a=[];if(r.forms.ice)a.push(['ice','冰']);if(r.forms.hot)a.push(['hot','熱']);if(r.forms.to)a.push(['to','外帶'+(r.toCap?'('+r.toCap+')':'')]);return a;}
+  function isEmpty(r){return !r.mats||r.mats.length===0;}
+
+  /* ---- 菜單連動提醒 ---- */
+  function renderMissing(){
+    var box=$('#missing');
+    var covered={};M.recipes.forEach(function(r){covered[norm(r.name)]=1;});
+    // 菜單有、配方完全沒建（含雲端新增品項）
+    var notBuilt=[];MENU_ITEMS.forEach(function(it){if(!covered[norm(it.n)])notBuilt.push(it);});
+    // 已建骨架、但還沒填材料
+    var empties=M.recipes.filter(isEmpty);
+    var html='';
+    if(notBuilt.length){
+      html+='<div><b>菜單有、配方還沒建（'+notBuilt.length+'）：</b><br>'+notBuilt.map(function(it){return '<span class="tag">'+esc(it.n)+'</span>';}).join('')+'<br><button class="mk" id="mkAll">一鍵全部建立骨架</button></div>';
+    }
+    if(empties.length){
+      if(html)html+='<div style="height:8px"></div>';
+      html+='<div><b>已建立、待填配方（'+empties.length+'）：</b><br>'+empties.map(function(r){return '<span class="tag">'+esc(r.name)+'</span>';}).join('')+'</div>';
+    }
+    if(html){box.innerHTML=html;box.classList.add('show');}
+    else{box.innerHTML='<b>✅ 每個菜單品項都有配方、也都填好了。</b>';box.classList.add('show');}
+  }
+
+  function render(){
+    renderCats();
+    var q=curSearch.trim();
+    var rs=M.recipes.filter(function(r){
+      if(curCat&&r.cat!==curCat)return false;
+      if(curStatus&&(r.status||'dev')!==curStatus)return false;
+      if(q){var hay=(r.name||'')+' '+(r.mats||[]).map(function(m){return m.n;}).join(' ');if(hay.indexOf(q)<0)return false;}
+      return true;
+    });
+    $('#countLbl').textContent='共 '+M.recipes.length+' 項';
+    $('#list').innerHTML = rs.length? rs.map(card).join('') : '<div class="empty">沒有符合的配方。按右下「＋ 新增配方」建立。</div>';
+    renderMissing();
+  }
+
+  function card(r){
+    var open=!!openIds[r.id];
+    var forms=activeForms(r);
+    var body;
+    if(isEmpty(r)){
+      body='<div class="emptymat">尚未填入材料 — 點「編輯」開始建立配方。</div>';
+    }else{
+      var head='<tr><th class="mat">材料</th>'+forms.map(function(f){return '<th>'+esc(f[1])+'</th>';}).join('')+'<th>單位</th></tr>';
+      var rows=(r.mats||[]).map(function(m){
+        return '<tr><td class="mat">'+esc(m.n)+'</td>'+forms.map(function(f){return '<td class="num">'+(m[f[0]]!==''&&m[f[0]]!=null?esc(m[f[0]]):'—')+'</td>';}).join('')+'<td class="u">'+esc(m.u||'')+'</td></tr>';
+      }).join('');
+      body='<table class="rtable">'+head+rows+'</table>';
+    }
+    var steps=r.steps?'<div class="rsteps"><div class="lb">步驟</div><div class="bd">'+esc(r.steps)+'</div></div>':'';
+    var note=r.note?'<div class="rsteps"><div class="lb">備註</div><div class="bd">'+esc(r.note)+'</div></div>':'';
+    var emptyDot=isEmpty(r)?'<span class="empty-dot">待填</span>':'';
+    return '<div class="rcard'+(open?' open':'')+'" data-id="'+r.id+'">'+
+      '<div class="rhd" data-toggle="'+r.id+'"><span class="nm">'+esc(r.name)+'</span>'+(r.cat?'<span class="cat">'+esc(r.cat)+'</span>':'')+'<span class="st '+((r.status||'dev')==='live'?'live':'dev')+'">'+((r.status||'dev')==='live'?'已上架':'研發中')+'</span>'+emptyDot+'<span class="chev">›</span></div>'+
+      '<div class="rbody">'+
+        '<div class="forms">供應：'+formsLabel(r)+'</div>'+
+        body+steps+note+
+        '<div class="ract"><button class="scale" data-scale="'+r.id+'">份量放大</button><button data-edit="'+r.id+'">編輯</button><button class="del" data-del="'+r.id+'">刪除</button></div>'+
+      '</div>'+
+      '</div>';
+  }
+
+  /* ---- material editor rows ---- */
+  function matRowHtml(m,i){
+    return '<tr>'+
+      '<td><input class="mn" data-f="n" data-i="'+i+'" value="'+esc(m.n||'')+'" placeholder="材料"></td>'+
+      '<td><input class="num" data-f="ice" data-i="'+i+'" value="'+esc(m.ice||'')+'" inputmode="decimal"></td>'+
+      '<td><input class="num" data-f="hot" data-i="'+i+'" value="'+esc(m.hot||'')+'" inputmode="decimal"></td>'+
+      '<td><input class="num" data-f="to" data-i="'+i+'" value="'+esc(m.to||'')+'" inputmode="decimal"></td>'+
+      '<td><input class="u" data-f="u" data-i="'+i+'" value="'+esc(m.u||'')+'" placeholder="g" style="width:44px"></td>'+
+      '<td><button class="drop" data-drop="'+i+'">✕</button></td></tr>';
+  }
+  function renderMatTable(){
+    var h='<tr><th style="text-align:left">材料</th><th>冰</th><th>熱</th><th>外帶</th><th>單位</th><th></th></tr>';
+    $('#matTable').innerHTML=h+matRows.map(matRowHtml).join('');
+  }
+  $('#matTable').addEventListener('input',function(e){
+    var el=e.target;if(!el.dataset.f)return;var i=+el.dataset.i;matRows[i][el.dataset.f]=el.value;
+  });
+  $('#matTable').addEventListener('click',function(e){
+    var d=e.target.closest('[data-drop]');if(!d)return;matRows.splice(+d.getAttribute('data-drop'),1);renderMatTable();
+  });
+  $('#addMat').onclick=function(){matRows.push({n:'',ice:'',hot:'',to:'',u:'g'});renderMatTable();};
+
+  function toggleToCap(){var on=$('#fTo').checked;$('#toLbl').style.display=on?'block':'none';$('#fToCap').style.display=on?'block':'none';}
+  $('#fTo').addEventListener('change',toggleToCap);
+
+  function openEdit(id){
+    editId=id||null;
+    var r=id?M.recipes.filter(function(x){return x.id===id;})[0]:null;
+    $('#emTitle').textContent=id?'編輯配方':'新增配方';
+    $('#fName').value=r?r.name:'';
+    $('#fCat').value=r?r.cat:(curCat||'');
+    $('#fStatus').value=r?(r.status||'dev'):'dev';
+    $('#fIce').checked=r?!!r.forms.ice:true;
+    $('#fHot').checked=r?!!r.forms.hot:false;
+    $('#fTo').checked=r?!!r.forms.to:false;
+    $('#fToCap').value=r&&r.toCap?r.toCap:'';
+    toggleToCap();
+    $('#fSteps').value=r&&r.steps?r.steps:'';
+    $('#fNote').value=r&&r.note?r.note:'';
+    matRows=r&&r.mats&&r.mats.length?JSON.parse(JSON.stringify(r.mats)):[{n:'',ice:'',hot:'',to:'',u:'g'}];
+    renderMatTable();
+    $('#editModal').classList.add('on');
+  }
+  $('#addBtn').onclick=function(){openEdit(null);};
+  $('#emCancel').onclick=function(){$('#editModal').classList.remove('on');};
+  $('#editModal').addEventListener('click',function(e){if(e.target===$('#editModal'))$('#editModal').classList.remove('on');});
+  $('#emSave').onclick=function(){
+    var name=$('#fName').value.trim();if(!name){alert('請輸入品名');return;}
+    var mats=matRows.map(function(m){return {n:(m.n||'').trim(),ice:(m.ice||'').trim(),hot:(m.hot||'').trim(),to:(m.to||'').trim(),u:(m.u||'').trim()};}).filter(function(m){return m.n;});
+    var rec={id:editId||nid('r'),name:name,cat:$('#fCat').value.trim(),status:$('#fStatus').value,
+      forms:{ice:$('#fIce').checked,hot:$('#fHot').checked,to:$('#fTo').checked},toCap:$('#fToCap').value.trim(),
+      mats:mats,steps:$('#fSteps').value.trim(),note:$('#fNote').value.trim()};
+    if(editId){var idx=M.recipes.map(function(x){return x.id;}).indexOf(editId);if(idx>=0)M.recipes[idx]=rec;openIds[editId]=true;}
+    else {M.recipes.push(rec);openIds[rec.id]=true;}
+    persist();render();$('#editModal').classList.remove('on');
+  };
+
+  /* ---- scale ---- */
+  var scaleId=null;
+  function openScale(id){
+    scaleId=id;var r=M.recipes.filter(function(x){return x.id===id;})[0];if(!r)return;
+    if(isEmpty(r)){alert('這項還沒填材料，先編輯配方喔');return;}
+    $('#scTitle').textContent=r.name+' · 份量放大';
+    var forms=activeForms(r);
+    $('#scForm').innerHTML=forms.map(function(f){return '<option value="'+f[0]+'">'+esc(f[1])+'</option>';}).join('');
+    renderScale();$('#scaleModal').classList.add('on');
+  }
+  function renderScale(){
+    var r=M.recipes.filter(function(x){return x.id===scaleId;})[0];if(!r)return;
+    var form=$('#scForm').value,n=parseFloat($('#scN').value)||1;
+    var h='<tr><th style="text-align:left">材料</th><th>單杯</th><th>×'+n+'</th><th>單位</th></tr>';
+    var body=(r.mats||[]).map(function(m){
+      var v=m[form];if(v==='' || v==null)return '';
+      var per=parseFloat(v);var tot=isNaN(per)?v:(Math.round(per*n*100)/100);
+      return '<tr><td style="text-align:left;font-weight:700">'+esc(m.n)+'</td><td class="num">'+esc(v)+'</td><td class="num" style="font-weight:800;color:var(--orange)">'+esc(tot)+'</td><td class="u">'+esc(m.u||'')+'</td></tr>';
+    }).join('');
+    $('#scTable').innerHTML=h+body;
+  }
+  $('#scForm').addEventListener('change',renderScale);
+  $('#scN').addEventListener('input',renderScale);
+  $('#scClose').onclick=function(){$('#scaleModal').classList.remove('on');};
+  $('#scaleModal').addEventListener('click',function(e){if(e.target===$('#scaleModal'))$('#scaleModal').classList.remove('on');});
+
+  /* ---- list interactions ---- */
+  $('#list').addEventListener('click',function(e){
+    var b;
+    if((b=e.target.closest('[data-edit]'))){openEdit(b.getAttribute('data-edit'));return;}
+    if((b=e.target.closest('[data-del]'))){if(confirm('確定刪除這個配方？')){var did=b.getAttribute('data-del');M.recipes=M.recipes.filter(function(x){return x.id!==did;});delete openIds[did];persist();render();}return;}
+    if((b=e.target.closest('[data-scale]'))){openScale(b.getAttribute('data-scale'));return;}
+    if((b=e.target.closest('[data-toggle]'))){var id=b.getAttribute('data-toggle');openIds[id]=!openIds[id];var cardEl=b.closest('.rcard');if(cardEl)cardEl.classList.toggle('open',!!openIds[id]);return;}
+  });
+  $('#missing').addEventListener('click',function(e){
+    if(e.target&&e.target.id==='mkAll'){
+      var covered={};M.recipes.forEach(function(r){covered[norm(r.name)]=1;});
+      MENU_ITEMS.forEach(function(it){if(!covered[norm(it.n)]){M.recipes.push(skeleton(it));}});
+      persist();render();
+    }
+  });
+  $('#catrow').addEventListener('click',function(e){var b=e.target.closest('[data-cat]');if(!b)return;curCat=b.getAttribute('data-cat');render();});
+  $('#search').addEventListener('input',function(){curSearch=this.value;render();});
+  $('#stFilter').addEventListener('change',function(){curStatus=this.value;render();});
+  $('#expandAll').onclick=function(){M.recipes.forEach(function(r){openIds[r.id]=true;});render();};
+  $('#collapseAll').onclick=function(){openIds={};render();};
+
+  /* ---- sync/backup ---- */
+  var syncNote=$('#syncNote');
+  function updNote(){
+    if(SYNC){syncNote.innerHTML='☁️ 已連接雲端同步，配方會與其他裝置共用。';}
+    else{syncNote.innerHTML='目前只存這台裝置（未接雲端）。要多裝置共用，請部署配方庫專屬 Apps Script 後，把網址寫進程式（或用下方進階設定）。建議偶爾「匯出備份」。';}
+  }
+  window.pullNow=function(){pullSync(function(){pullMenu(function(){render();});});};
+  window.toggleAdv=function(){var u=$('#syncUrl'),b=$('#syncBtns'),e=$('#syncEdit');var show=u.style.display==='none';u.style.display=show?'block':'none';b.style.display=show?'flex':'none';e.textContent=show?'進階：如已自行部署配方庫雲端，可在此貼上網址（會覆蓋程式內設定）。':'';if(show){try{u.value=localStorage.getItem(UKEY)||'';}catch(x){}}};
+  window.saveSync=function(){var v=$('#syncUrl').value.trim();if(!v){alert('請貼上網址');return;}SYNC=v;try{localStorage.setItem(UKEY,SYNC);}catch(e){}updNote();pushSync();alert('已儲存自訂網址');};
+  window.exportData=function(){try{var bl=new Blob([JSON.stringify(M)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download='DAFA配方備份_'+new Date().toISOString().slice(0,10)+'.json';a.click();}catch(e){alert('匯出失敗');}};
+  window.importData=function(inp){var f=inp.files&&inp.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){try{var d=JSON.parse(rd.result);if(d&&d.recipes){M=d;if(!M.recipes)M.recipes=[];persist();render();alert('已匯入');}else alert('檔案格式不符');}catch(e){alert('讀取失敗');}inp.value='';};rd.readAsText(f);};
+  updNote();
+
+  /* ---- boot ---- */
+  importOnce();
+  render();
+  pullSync(function(){render();pullMenu(function(){render();});});
+})();
+</script>
+</body>
+</html>
