@@ -247,7 +247,7 @@ body.edit-on .manage{display:block}
   var MODE = /[?&]edit(=|&|$)/.test(Q) ? 'edit' : (/[?&]table=/.test(Q) ? 'order' : 'view');
   var TABLE=''; var _mt=Q.match(/[?&]table=([^&]+)/); if(_mt) TABLE=decodeURIComponent(_mt[1]);
   var canEdit=(MODE==='edit');
-  var APP_VERSION='2026-09-17-03';  // 每次更新 HTML 改這個號碼，客人手機會自動抓最新版
+  var APP_VERSION='2026-09-30-04';  // 每次更新 HTML 改這個號碼，客人手機會自動抓最新版
   var M=null;
   try{ var raw=localStorage.getItem(LKEY); if(raw) M=JSON.parse(raw); }catch(e){}
   if(!M||!M.cats){ M=JSON.parse(JSON.stringify(SEED)); }
@@ -270,23 +270,24 @@ body.edit-on .manage{display:block}
     }
   }
   var LANG='zh'; try{ LANG=localStorage.getItem('dafaLang')||'zh'; }catch(e){}
-  function tr(o,fld){ return (LANG==='en'&&o&&o[fld+'_en'])?o[fld+'_en']:(o?(o[fld]||''):''); }
-  function noticeText(){ return (LANG==='en'&&M.notice_en)?M.notice_en:(M.notice||''); }
+  function tr(o,fld){ if(!o)return ''; if(LANG!=='zh'&&o[fld+'_'+LANG])return o[fld+'_'+LANG]; return o[fld]||''; }
+  function noticeText(){ if(LANG!=='zh'&&M['notice_'+LANG])return M['notice_'+LANG]; return M.notice||''; }
+  function L(zh,en,ja,ko){ return LANG==='en'?en:(LANG==='ja'?(ja||en):(LANG==='ko'?(ko||en):zh)); }
   var STR={
-    promoHdr:{zh:'🎟 最新活動',en:"🎟 What's On"},
-    fine:{zh:'價格如有調整，以現場公告為準。',en:'Prices may vary; final total at the counter.'},
-    thanks:{zh:'謝謝光臨 · Thank you ♡',en:'Thank you ♡'},
-    newBadge:{zh:'新品',en:'New'},
-    soldBadge:{zh:'完售',en:'Sold out'},
-    addOrder:{zh:'＋ 點餐',en:'＋ Add'},
-    total:{zh:'合計',en:'Total'},
-    disc:{zh:'此為參考金額，實際以櫃台結帳為準（可能有折扣）。',en:'Estimated total; final amount (incl. discounts) at the counter.'},
-    more:{zh:'繼續點餐',en:'Add more'},
-    send:{zh:'送出到櫃台',en:'Send to counter'},
-    sending:{zh:'送出中…',en:'Sending…'},
-    sentOk:{zh:'已送出到櫃台！可以繼續加點，或直接到櫃台結帳。',en:'Sent to the counter! Add more, or pay at the counter.'},
-    pickFlavor:{zh:' · 選擇口味',en:' · Choose flavor'},
-    emptyCart:{zh:'還沒有點任何品項',en:'No items yet.'}
+    promoHdr:{zh:'🎟 最新活動',en:"🎟 What's On",ja:'🎟 最新イベント',ko:'🎟 최신 이벤트'},
+    fine:{zh:'價格如有調整，以現場公告為準。',en:'Prices may vary; final total at the counter.',ja:'価格は変更される場合があります。最終金額はレジにて。',ko:'가격은 변동될 수 있으며 최종 금액은 카운터에서 확인됩니다.'},
+    thanks:{zh:'謝謝光臨 · Thank you ♡',en:'Thank you ♡',ja:'ご来店ありがとうございます ♡',ko:'방문해 주셔서 감사합니다 ♡'},
+    newBadge:{zh:'新品',en:'New',ja:'新作',ko:'신메뉴'},
+    soldBadge:{zh:'完售',en:'Sold out',ja:'売切',ko:'품절'},
+    addOrder:{zh:'＋ 點餐',en:'＋ Add',ja:'＋ 注文',ko:'＋ 주문'},
+    total:{zh:'合計',en:'Total',ja:'合計',ko:'합계'},
+    disc:{zh:'此為參考金額，實際以櫃台結帳為準（可能有折扣）。',en:'Estimated total; final amount (incl. discounts) at the counter.',ja:'目安金額です。最終金額（割引含む）はレジにて。',ko:'참고 금액이며 최종 금액(할인 포함)은 카운터에서 결제됩니다.'},
+    more:{zh:'繼續點餐',en:'Add more',ja:'注文を追加',ko:'추가 주문'},
+    send:{zh:'送出到櫃台',en:'Send to counter',ja:'カウンターへ送信',ko:'카운터로 전송'},
+    sending:{zh:'送出中…',en:'Sending…',ja:'送信中…',ko:'전송 중…'},
+    sentOk:{zh:'已送出到櫃台！可以繼續加點，或直接到櫃台結帳。',en:'Sent to the counter! Add more, or pay at the counter.',ja:'カウンターへ送信しました！追加注文もお会計もカウンターでどうぞ。',ko:'카운터로 전송되었습니다! 추가 주문 또는 카운터에서 결제하세요.'},
+    pickFlavor:{zh:' · 選擇口味',en:' · Choose flavor',ja:' · フレーバー選択',ko:' · 맛 선택'},
+    emptyCart:{zh:'還沒有點任何品項',en:'No items yet.',ja:'まだ注文がありません',ko:'아직 주문이 없습니다'}
   };
   function T(k){ var o=STR[k]; return o?(o[LANG]||o.zh):''; }
   function render(){
@@ -320,7 +321,7 @@ body.edit-on .manage{display:block}
         var fl=it.flavors||[];
         var avail=fl.filter(function(x){return !x.sold;});
         var hidden=it.sold||(fl.length>0&&avail.length===0);
-        var flView=(avail.length? '<div class="flav">'+(LANG==='en'?'Flavors: ':'口味：')+avail.map(function(x){return esc(tr(x,'name'));}).join('・')+'</div>':'');
+        var flView=(avail.length? '<div class="flav">'+L('口味：','Flavors: ','フレーバー：','맛：')+avail.map(function(x){return esc(tr(x,'name'));}).join('・')+'</div>':'');
         var flEdit='<div class="flavedit"><span class="flabel">口味細項：</span>'+
           fl.map(function(x,fi){ return '<button class="fchip'+(x.sold?' soldf':'')+'" data-flavtoggle="1" data-ci="'+ci+'" data-ii="'+ii+'" data-fi="'+fi+'">'+esc(x.name)+(x.name_en?'<span class="fen">'+esc(x.name_en)+'</span>':'')+'<span class="fedit" data-flavren="1" data-ci="'+ci+'" data-ii="'+ii+'" data-fi="'+fi+'">✎</span><span class="fx" data-flavdel="1" data-ci="'+ci+'" data-ii="'+ii+'" data-fi="'+fi+'">✕</span></button>'; }).join('')+
           '<button class="fchip addf" data-flavadd="1" data-ci="'+ci+'" data-ii="'+ii+'">＋ 口味</button></div>';
@@ -348,7 +349,7 @@ body.edit-on .manage{display:block}
         '<button class="offbtn'+(p.off?' on':'')+'" data-payoff="'+pi+'">'+(p.off?'不提供':'可用')+'</button>'+
         '<button data-payren="'+pi+'">改名</button><button class="del" data-paydel="'+pi+'">✕</button></div>'; }).join('')+
       '<div class="addbar" style="margin-top:8px"><button data-payadd="1">＋ 新增付款方式</button></div>';
-    var fn=document.getElementById('fineNote'); if(fn) fn.innerHTML=(LANG==='en'?'Prices may vary; final total at the counter.<br>Thank you ♡':'價格如有調整，以現場公告為準。<br>謝謝光臨 · Thank you ♡');
+    var fn=document.getElementById('fineNote'); if(fn) fn.innerHTML=T('fine')+'<br>'+T('thanks');
   }
 
   /* item modal */
@@ -359,6 +360,10 @@ body.edit-on .manage{display:block}
       '<label>品項名稱（英文，可留空）</label><input type="text" id="emNameEn">'+
       '<label>備註 / 風味（中文，可留空）</label><input type="text" id="emNote">'+
       '<label>備註 / 風味（英文，可留空）</label><input type="text" id="emNoteEn">'+
+      '<label>品項名稱（日文，可留空）</label><input type="text" id="emNameJa">'+
+      '<label>備註 / 風味（日文，可留空）</label><input type="text" id="emNoteJa">'+
+      '<label>品項名稱（韓文，可留空）</label><input type="text" id="emNameKo">'+
+      '<label>備註 / 風味（韓文，可留空）</label><input type="text" id="emNoteKo">'+
       '<label>價格</label><input type="text" id="emPrice" inputmode="numeric">'+
       '<div class="chk"><label style="font-weight:700"><input type="checkbox" id="emNew"> 標示為「新品」</label></div>'+
       '<div class="chk"><label style="font-weight:700"><input type="checkbox" id="emSold"> 目前完售（不顯示在菜單上）</label></div>'+
@@ -376,6 +381,10 @@ body.edit-on .manage{display:block}
     modal.querySelector('#emNote').value=it&&it.note?it.note:'';
     modal.querySelector('#emNameEn').value=it&&it.name_en?it.name_en:'';
     modal.querySelector('#emNoteEn').value=it&&it.note_en?it.note_en:'';
+    modal.querySelector('#emNameJa').value=it&&it.name_ja?it.name_ja:'';
+    modal.querySelector('#emNoteJa').value=it&&it.note_ja?it.note_ja:'';
+    modal.querySelector('#emNameKo').value=it&&it.name_ko?it.name_ko:'';
+    modal.querySelector('#emNoteKo').value=it&&it.note_ko?it.note_ko:'';
     modal.querySelector('#emPrice').value=it?it.price:'';
     modal.querySelector('#emNew').checked=!!(it&&it.isNew);
     modal.querySelector('#emSold').checked=!!(it&&it.sold);
@@ -386,13 +395,23 @@ body.edit-on .manage{display:block}
     var note=modal.querySelector('#emNote').value.trim();
     var nameEn=modal.querySelector('#emNameEn').value.trim();
     var noteEn=modal.querySelector('#emNoteEn').value.trim();
+    var nameJa=modal.querySelector('#emNameJa').value.trim();
+    var noteJa=modal.querySelector('#emNoteJa').value.trim();
+    var nameKo=modal.querySelector('#emNameKo').value.trim();
+    var noteKo=modal.querySelector('#emNoteKo').value.trim();
     var price=modal.querySelector('#emPrice').value.trim();
     var isNew=modal.querySelector('#emNew').checked;
     var isSold=modal.querySelector('#emSold').checked;
     if(!name){ alert('請輸入品項名稱'); return; }
     var arr=M.cats[mCtx.ci].items=M.cats[mCtx.ci].items||[];
-    var b={id:(mCtx.ii!=null?arr[mCtx.ii].id:nid('i')),name:name,price:price};
-    if(note) b.note=note; if(nameEn) b.name_en=nameEn; if(noteEn) b.note_en=noteEn; if(isNew) b.isNew=true; if(isSold) b.sold=true;
+    // 編輯時保留原本其他欄位（例如口味 flavors），只更新這裡的欄位
+    var b=(mCtx.ii!=null)?JSON.parse(JSON.stringify(arr[mCtx.ii])):{id:nid('i')};
+    b.name=name; b.price=price;
+    function setopt(k,v){ if(v) b[k]=v; else delete b[k]; }
+    setopt('note',note); setopt('name_en',nameEn); setopt('note_en',noteEn);
+    setopt('name_ja',nameJa); setopt('note_ja',noteJa); setopt('name_ko',nameKo); setopt('note_ko',noteKo);
+    if(isNew) b.isNew=true; else delete b.isNew;
+    if(isSold) b.sold=true; else delete b.sold;
     if(mCtx.ii!=null) arr[mCtx.ii]=b; else arr.push(b);
     persist(); render(); modal.classList.remove('on');
   }
@@ -518,21 +537,22 @@ body.edit-on .manage{display:block}
     flavModal.querySelector('#flavCancel').onclick=function(){ flavModal.classList.remove('on'); };
     updateOrderLang();
   }
+  var sending=false;
   function updateOrderLang(){
-    var en=(LANG==='en'), t=(TABLE||'?');
-    var b1=document.getElementById('oBanner'); if(b1) b1.textContent= en?('Table '+t+' · Mobile order'):(t+' 號桌 · 手機點餐');
-    var b2=document.getElementById('cartTitle'); if(b2) b2.textContent= en?('Table '+t+' · Review order'):(t+' 號桌 · 確認點餐');
-    var b3=document.getElementById('cartTotLbl'); if(b3) b3.textContent= en?'Total':'合計';
-    var b4=document.getElementById('cartDis'); if(b4) b4.textContent= en?'Estimated total; final amount at the counter (discounts may apply).':'此為參考金額，實際以櫃台結帳為準（可能有折扣）。';
-    var b5=document.getElementById('cartMore'); if(b5) b5.textContent= en?'Add more':'繼續點餐';
-    var b6=document.getElementById('cartSend'); if(b6 && b6.textContent!=='送出中…' && b6.textContent!=='Sending…') b6.textContent= en?'Send to counter':'送出到櫃台';
-    var b7=document.getElementById('flavCancel'); if(b7) b7.textContent= en?'Cancel':'取消';
+    var t=(TABLE||'?');
+    var b1=document.getElementById('oBanner'); if(b1) b1.textContent= L(t+' 號桌 · 手機點餐','Table '+t+' · Mobile order','テーブル '+t+' · モバイル注文','테이블 '+t+' · 모바일 주문');
+    var b2=document.getElementById('cartTitle'); if(b2) b2.textContent= L(t+' 號桌 · 確認點餐','Table '+t+' · Review order','テーブル '+t+' · 注文確認','테이블 '+t+' · 주문 확인');
+    var b3=document.getElementById('cartTotLbl'); if(b3) b3.textContent= T('total');
+    var b4=document.getElementById('cartDis'); if(b4) b4.textContent= T('disc');
+    var b5=document.getElementById('cartMore'); if(b5) b5.textContent= T('more');
+    var b6=document.getElementById('cartSend'); if(b6 && !sending) b6.textContent= T('send');
+    var b7=document.getElementById('flavCancel'); if(b7) b7.textContent= L('取消','Cancel','キャンセル','취소');
     renderCartFab();
   }
-  function renderCartFab(){ if(!oFab) return; var n=0,t=0; cart.forEach(function(l){ n+=l.q; t+=l.p*l.q; }); oFab.textContent = n? ((LANG==='en'?'🛒 View order (':'🛒 查看點餐 (')+n+') · $'+t) : (LANG==='en'?'🛒 No items yet':'🛒 尚未點餐'); }
+  function renderCartFab(){ if(!oFab) return; var n=0,t=0; cart.forEach(function(l){ n+=l.q; t+=l.p*l.q; }); oFab.textContent = n? (L('🛒 查看點餐 (','🛒 View order (','🛒 注文を見る (','🛒 주문 보기 (')+n+') · $'+t) : L('🛒 尚未點餐','🛒 No items yet','🛒 注文はまだ','🛒 주문 없음'); }
   function renderCart(){
     var el=cartModal.querySelector('#cartList'), t=0;
-    if(!cart.length){ el.innerHTML='<div class="cempty">還沒有點任何品項</div>'; cartModal.querySelector('#cartTotal').textContent='$0'; cartModal.querySelector('#cartSend').disabled=true; return; }
+    if(!cart.length){ el.innerHTML='<div class="cempty">'+T('emptyCart')+'</div>'; cartModal.querySelector('#cartTotal').textContent='$0'; cartModal.querySelector('#cartSend').disabled=true; return; }
     cartModal.querySelector('#cartSend').disabled=false;
     el.innerHTML=cart.map(function(l,i){ t+=l.p*l.q; return '<div class="cline"><span class="cn">'+esc(l.n)+(l.flavor?'<small>'+esc(l.flavor)+'</small>':'')+'</span>'+
       '<span class="cstep"><button data-cs="dec" data-i="'+i+'">−</button><b>'+l.q+'</b><button data-cs="inc" data-i="'+i+'">＋</button></span>'+
@@ -542,7 +562,7 @@ body.edit-on .manage{display:block}
   function openCart(){ updateOrderLang(); renderCart(); cartModal.classList.add('on'); }
   function openFlavorPick(item){
     var avail=(item.flavors||[]).filter(function(x){return !x.sold;});
-    flavModal.querySelector('#flavT').textContent=tr(item,'name')+(LANG==='en'?' · Choose flavor':' · 選擇口味');
+    flavModal.querySelector('#flavT').textContent=tr(item,'name')+T('pickFlavor');
     flavModal.querySelector('#flavList').innerHTML=avail.map(function(x){ return '<button data-fn="'+esc(x.name).replace(/"/g,'&quot;')+'">'+esc(tr(x,'name'))+'</button>'; }).join('');
     Array.prototype.forEach.call(flavModal.querySelectorAll('#flavList button'),function(b){
       b.onclick=function(){ addLine(item.name, b.getAttribute('data-fn'), priceNum(item.price)); flavModal.classList.remove('on'); };
@@ -552,15 +572,15 @@ body.edit-on .manage{display:block}
   function sendOrder(){
     if(!cart.length) return;
     if(!ORDER_SYNC){ alert('尚未設定「桌單雲端網址」，請店家先在程式裡填入 ORDER_SYNC。'); return; }
-    var btn=cartModal.querySelector('#cartSend'); btn.disabled=true; btn.textContent=(LANG==='en'?'Sending…':'送出中…');
+    var btn=cartModal.querySelector('#cartSend'); btn.disabled=true; sending=true; btn.textContent=T('sending');
     var body=JSON.stringify({action:'add',table:TABLE,items:cart.map(function(l){return {n:l.n,sub:l.flavor,p:l.p,q:l.q};})});
     // no-cors 送出：不等回應，避免 Apps Script 回應慢卡住
     fetch(ORDER_SYNC,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body}).catch(function(){});
     // 直接視為送出成功（單已送往雲端）
     setTimeout(function(){
-      btn.textContent=(LANG==='en'?'Send to counter':'送出到櫃台'); btn.disabled=false;
+      sending=false; btn.textContent=T('send'); btn.disabled=false;
       cart=[]; renderCart(); renderCartFab(); cartModal.classList.remove('on');
-      alert(LANG==='en'?'Sent to the counter! Add more, or pay at the counter.':'已送出到櫃台！可以繼續加點，或直接到櫃台結帳。');
+      alert(T('sentOk'));
     }, 600);
   }
   if(MODE==='order'){
@@ -574,8 +594,10 @@ body.edit-on .manage{display:block}
     });
   }
 
+  var LANGS=['zh','en','ja','ko'],LANGLABEL={zh:'中文',en:'EN',ja:'日本語',ko:'한국어'};
+  function nextLang(l){ return LANGS[(LANGS.indexOf(l)+1)%LANGS.length]; }
   var langBtn=document.getElementById('langBtn');
-  if(langBtn){ langBtn.textContent=(LANG==='en'?'中文':'EN'); langBtn.onclick=function(){ LANG=(LANG==='en'?'zh':'en'); try{localStorage.setItem('dafaLang',LANG);}catch(e){} langBtn.textContent=(LANG==='en'?'中文':'EN'); render(); if(document.getElementById('oBanner')) updateOrderLang(); }; }
+  if(langBtn){ langBtn.textContent=LANGLABEL[nextLang(LANG)]; langBtn.onclick=function(){ LANG=nextLang(LANG); try{localStorage.setItem('dafaLang',LANG);}catch(e){} langBtn.textContent=LANGLABEL[nextLang(LANG)]; render(); if(document.getElementById('oBanner')) updateOrderLang(); }; }
   render();
   // ===== 版本自動更新：偵測到新版就自動重整（避免看到舊版）=====
   (function(){
