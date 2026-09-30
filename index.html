@@ -172,6 +172,14 @@ body.edit-on .manage{display:block}
 .langsel{display:inline-flex;gap:2px;background:var(--brown);border-radius:999px;padding:3px}
 .langsel button{border:0;background:transparent;color:#fff;opacity:.55;font-family:inherit;font-size:12px;font-weight:800;padding:6px 9px;border-radius:999px;cursor:pointer;line-height:1}
 .langsel button.on{background:#fff;color:var(--brown);opacity:1}
+.langtabs{display:flex;gap:4px;background:#F3EADB;border-radius:10px;padding:4px;margin:2px 0 10px}
+.langtabs button{flex:1;border:0;background:transparent;color:var(--brown-soft);font-family:inherit;font-size:13px;font-weight:800;padding:8px 4px;border-radius:7px;cursor:pointer}
+.langtabs button.on{background:var(--orange);color:#fff}
+.lg label{display:block}
+.tempbox{margin:12px 0 2px;padding:10px;background:#F3EADB;border-radius:10px}
+.tempbox .templbl{display:block;font-size:12px;font-weight:800;color:var(--brown-soft);margin-bottom:6px}
+.tempbox .tchk{display:inline-flex;align-items:center;gap:5px;font-size:15px;font-weight:800;color:var(--brown);margin-right:18px}
+.row .temp{display:inline-block;font-size:11px;font-weight:800;color:var(--blue);background:#E7EEFB;border-radius:999px;padding:1.5px 8px;margin-left:6px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -253,7 +261,7 @@ body.edit-on .manage{display:block}
   var MODE = /[?&]edit(=|&|$)/.test(Q) ? 'edit' : (/[?&]table=/.test(Q) ? 'order' : 'view');
   var TABLE=''; var _mt=Q.match(/[?&]table=([^&]+)/); if(_mt) TABLE=decodeURIComponent(_mt[1]);
   var canEdit=(MODE==='edit');
-  var APP_VERSION='2026-09-30-06';  // 每次更新 HTML 改這個號碼，客人手機會自動抓最新版
+  var APP_VERSION='2026-09-30-07';  // 每次更新 HTML 改這個號碼，客人手機會自動抓最新版
   var M=null;
   try{ var raw=localStorage.getItem(LKEY); if(raw) M=JSON.parse(raw); }catch(e){}
   if(!M||!M.cats){ M=JSON.parse(JSON.stringify(SEED)); }
@@ -279,6 +287,7 @@ body.edit-on .manage{display:block}
   function tr(o,fld){ if(!o)return ''; if(LANG!=='zh'&&o[fld+'_'+LANG])return o[fld+'_'+LANG]; return o[fld]||''; }
   function noticeText(){ if(LANG!=='zh'&&M['notice_'+LANG])return M['notice_'+LANG]; return M.notice||''; }
   function L(zh,en,ja,ko){ return LANG==='en'?en:(LANG==='ja'?(ja||en):(LANG==='ko'?(ko||en):zh)); }
+  function tempLabel(it){ var t=it&&it.temp; if(!t)return ''; var p=[]; if(t==='ice'||t==='both')p.push(L('冰','Iced','アイス','아이스')); if(t==='hot'||t==='both')p.push(L('熱','Hot','ホット','핫')); return p.join('／'); }
   var STR={
     promoHdr:{zh:'🎟 最新活動',en:"🎟 What's On",ja:'🎟 最新イベント',ko:'🎟 최신 이벤트'},
     fine:{zh:'價格如有調整，以現場公告為準。',en:'Prices may vary; final total at the counter.',ja:'価格は変更される場合があります。最終金額はレジにて。',ko:'가격은 변동될 수 있으며 최종 금액은 카운터에서 확인됩니다.'},
@@ -337,7 +346,7 @@ body.edit-on .manage{display:block}
           '<button class="'+(it.sold?'soldon':'')+'" data-sold="1" data-ci="'+ci+'" data-ii="'+ii+'">'+(it.sold?'完售中':'標完售')+'</button>'+
           '<button class="'+(it.isNew?'newon':'')+'" data-new="1" data-ci="'+ci+'" data-ii="'+ii+'">新品</button>'+
           '<button data-edit="1" data-ci="'+ci+'" data-ii="'+ii+'">編輯</button><button class="del" data-del="1" data-ci="'+ci+'" data-ii="'+ii+'">刪除</button></div>'+
-          '<div class="row"><span class="nm">'+esc(tr(it,'name'))+(it.isNew?'<span class="new">'+T('newBadge')+'</span>':'')+'<span class="soldtag">'+T('soldBadge')+'</span>'+
+          '<div class="row"><span class="nm">'+esc(tr(it,'name'))+(it.isNew?'<span class="new">'+T('newBadge')+'</span>':'')+'<span class="soldtag">'+T('soldBadge')+'</span>'+(tempLabel(it)?'<span class="temp">'+esc(tempLabel(it))+'</span>':'')+
           (tr(it,'note')?'<span class="note">'+esc(tr(it,'note'))+'</span>':'')+'</span><span class="lead"></span><span class="pr num">'+esc(it.price)+'</span></div>'+
           flView+flEdit+((MODE==='order'&&!hidden)?'<div class="addcartwrap"><button class="addcart" data-oadd="'+c.id+'|'+it.id+'">'+T('addOrder')+'</button></div>':'')+
           '</div>';
@@ -362,14 +371,31 @@ body.edit-on .manage{display:block}
   var modal, mCtx;
   (function(){ modal=document.createElement('div'); modal.className='emodal';
     modal.innerHTML='<div class="box"><h3 id="emT">新增品項</h3>'+
-      '<label>品項名稱（中文）</label><input type="text" id="emName">'+
-      '<label>品項名稱（英文，可留空）</label><input type="text" id="emNameEn">'+
-      '<label>備註 / 風味（中文，可留空）</label><input type="text" id="emNote">'+
-      '<label>備註 / 風味（英文，可留空）</label><input type="text" id="emNoteEn">'+
-      '<label>品項名稱（日文，可留空）</label><input type="text" id="emNameJa">'+
-      '<label>備註 / 風味（日文，可留空）</label><input type="text" id="emNoteJa">'+
-      '<label>品項名稱（韓文，可留空）</label><input type="text" id="emNameKo">'+
-      '<label>備註 / 風味（韓文，可留空）</label><input type="text" id="emNoteKo">'+
+      '<div class="langtabs" id="emLangTabs">'+
+        '<button type="button" data-l="zh" class="on">中文</button>'+
+        '<button type="button" data-l="en">EN</button>'+
+        '<button type="button" data-l="ja">日本語</button>'+
+        '<button type="button" data-l="ko">한국어</button>'+
+      '</div>'+
+      '<div class="lg" data-lg="zh">'+
+        '<label>品項名稱（中文）</label><input type="text" id="emName">'+
+        '<label>備註 / 風味（中文，可留空）</label><input type="text" id="emNote">'+
+      '</div>'+
+      '<div class="lg" data-lg="en" hidden>'+
+        '<label>Item name (English, optional)</label><input type="text" id="emNameEn">'+
+        '<label>Note / flavor (English, optional)</label><input type="text" id="emNoteEn">'+
+      '</div>'+
+      '<div class="lg" data-lg="ja" hidden>'+
+        '<label>品名（日本語・任意）</label><input type="text" id="emNameJa">'+
+        '<label>備考 / フレーバー（任意）</label><input type="text" id="emNoteJa">'+
+      '</div>'+
+      '<div class="lg" data-lg="ko" hidden>'+
+        '<label>이름（한국어・선택）</label><input type="text" id="emNameKo">'+
+        '<label>비고 / 맛（선택）</label><input type="text" id="emNoteKo">'+
+      '</div>'+
+      '<div class="tempbox"><span class="templbl">供應溫度（自動四語顯示，免手打）</span>'+
+        '<label class="tchk"><input type="checkbox" id="emTIce"> 冰</label>'+
+        '<label class="tchk"><input type="checkbox" id="emTHot"> 熱</label></div>'+
       '<label>價格</label><input type="text" id="emPrice" inputmode="numeric">'+
       '<div class="chk"><label style="font-weight:700"><input type="checkbox" id="emNew"> 標示為「新品」</label></div>'+
       '<div class="chk"><label style="font-weight:700"><input type="checkbox" id="emSold"> 目前完售（不顯示在菜單上）</label></div>'+
@@ -377,8 +403,10 @@ body.edit-on .manage{display:block}
     document.body.appendChild(modal);
     modal.querySelector('#emNo').onclick=function(){modal.classList.remove('on');};
     modal.querySelector('#emOk').onclick=saveItem;
+    modal.querySelector('#emLangTabs').addEventListener('click',function(e){var b=e.target.closest('[data-l]');if(!b)return;var l=b.getAttribute('data-l');Array.prototype.forEach.call(modal.querySelectorAll('#emLangTabs button'),function(x){x.classList.toggle('on',x===b);});Array.prototype.forEach.call(modal.querySelectorAll('.lg'),function(g){g.hidden=g.getAttribute('data-lg')!==l;});});
     modal.addEventListener('click',function(e){if(e.target===modal)modal.classList.remove('on');});
   })();
+  function emSetTab(l){Array.prototype.forEach.call(modal.querySelectorAll('#emLangTabs button'),function(x){x.classList.toggle('on',x.getAttribute('data-l')===l);});Array.prototype.forEach.call(modal.querySelectorAll('.lg'),function(g){g.hidden=g.getAttribute('data-lg')!==l;});}
   function openItem(ci,ii){
     mCtx={ci:ci,ii:ii};
     var it=(ii!=null)?M.cats[ci].items[ii]:null;
@@ -391,9 +419,12 @@ body.edit-on .manage{display:block}
     modal.querySelector('#emNoteJa').value=it&&it.note_ja?it.note_ja:'';
     modal.querySelector('#emNameKo').value=it&&it.name_ko?it.name_ko:'';
     modal.querySelector('#emNoteKo').value=it&&it.note_ko?it.note_ko:'';
+    modal.querySelector('#emTIce').checked=!!(it&&(it.temp==='ice'||it.temp==='both'));
+    modal.querySelector('#emTHot').checked=!!(it&&(it.temp==='hot'||it.temp==='both'));
     modal.querySelector('#emPrice').value=it?it.price:'';
     modal.querySelector('#emNew').checked=!!(it&&it.isNew);
     modal.querySelector('#emSold').checked=!!(it&&it.sold);
+    emSetTab('zh');
     modal.classList.add('on');
   }
   function saveItem(){
@@ -408,6 +439,8 @@ body.edit-on .manage{display:block}
     var price=modal.querySelector('#emPrice').value.trim();
     var isNew=modal.querySelector('#emNew').checked;
     var isSold=modal.querySelector('#emSold').checked;
+    var ti=modal.querySelector('#emTIce').checked,th=modal.querySelector('#emTHot').checked;
+    var temp=ti&&th?'both':(ti?'ice':(th?'hot':''));
     if(!name){ alert('請輸入品項名稱'); return; }
     var arr=M.cats[mCtx.ci].items=M.cats[mCtx.ci].items||[];
     // 編輯時保留原本其他欄位（例如口味 flavors），只更新這裡的欄位
@@ -416,6 +449,7 @@ body.edit-on .manage{display:block}
     function setopt(k,v){ if(v) b[k]=v; else delete b[k]; }
     setopt('note',note); setopt('name_en',nameEn); setopt('note_en',noteEn);
     setopt('name_ja',nameJa); setopt('note_ja',noteJa); setopt('name_ko',nameKo); setopt('note_ko',noteKo);
+    setopt('temp',temp);
     if(isNew) b.isNew=true; else delete b.isNew;
     if(isSold) b.sold=true; else delete b.sold;
     if(mCtx.ii!=null) arr[mCtx.ii]=b; else arr.push(b);
