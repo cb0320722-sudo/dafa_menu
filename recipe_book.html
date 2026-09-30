@@ -108,10 +108,12 @@ html,body{margin:0;background:var(--cream);color:var(--brown);font-family:'Archi
   <div class="manage">
     <h4>資料 · 備份 &amp; 同步</h4>
     <p class="hint" id="syncNote" style="margin-top:0"></p>
+    <p class="hint" id="cloudStatus" style="margin-top:2px;font-weight:800"></p>
     <div class="mrow">
       <button onclick="pullNow()">重新整理雲端</button>
       <button onclick="exportData()">匯出備份</button>
       <label>匯入備份<input type="file" accept="application/json" style="display:none" onchange="importData(this)"></label>
+      <button onclick="restoreBackup()">還原本機備份</button>
     </div>
     <p class="hint" id="syncEdit" style="margin-top:10px"></p>
     <input type="text" id="syncUrl" placeholder="（進階）自訂雲端同步網址" style="width:100%;box-sizing:border-box;border:1.5px solid var(--orange-line);border-radius:8px;padding:9px;margin-top:4px;font-family:inherit;font-size:13px;display:none">
@@ -194,10 +196,50 @@ html,body{margin:0;background:var(--cream);color:var(--brown);font-family:'Archi
 
   function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function norm(s){return String(s||'').replace(/\s+/g,'').trim();}
-  function saveLocal(){try{localStorage.setItem(LKEY,JSON.stringify(M));}catch(e){}}
+  var BKEY='dafaRecipesBackup_v1';
+  function isEmptyRec(r){return (!r.mats||r.mats.length===0)&&!r.steps&&!r.note;}
+  function filledCount(o){return (((o&&o.recipes)||[]).filter(function(r){return !isEmptyRec(r);})).length;}
+  function recScore(r){var s=0;(r.mats||[]).forEach(function(m){s+=1;['ice','hot','to'].forEach(function(k){if(m[k]!==''&&m[k]!=null)s+=1;});});if(r.steps)s+=2;if(r.note)s+=1;if(r.toCap)s+=1;return s;}
+  function saveLocal(){
+    try{localStorage.setItem(LKEY,JSON.stringify(M));}catch(e){}
+    // 高水位備份：只在「填好的配方數 ≥ 既有備份」時覆蓋，避免被清空狀態蓋掉
+    try{var b=localStorage.getItem(BKEY);var bc=b?filledCount(JSON.parse(b)):-1;if(filledCount(M)>=bc)localStorage.setItem(BKEY,JSON.stringify(M));}catch(e){}
+  }
   function pushSync(){if(!SYNC)return;fetch(SYNC,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(M)}).catch(function(){});}
-  function persist(){M.updated=Date.now();saveLocal();pushSync();}
-  function pullSync(cb){if(!SYNC){cb&&cb();return;}fetch(SYNC).then(function(r){return r.json();}).then(function(d){if(d&&d.recipes&&(d.updated||0)>(M.updated||0)){M=d;if(!M.recipes)M.recipes=[];saveLocal();}cb&&cb();}).catch(function(){cb&&cb();});}
+  function persist(){M.updated=Date.now();saveLocal();pushSync();verifyCloud();}
+  // 合併（不覆蓋）：以 id 為主、其次品名；同項保留內容較豐富的一方；本機獨有一律保留
+  function mergeIn(cloud){
+    if(!cloud||!cloud.recipes)return false;
+    var changed=false,byId={},byName={};
+    M.recipes.forEach(function(r){byId[r.id]=r;byName[norm(r.name)]=r;});
+    cloud.recipes.forEach(function(cr){
+      if(!cr||!cr.name)return;
+      var lr=byId[cr.id]||byName[norm(cr.name)];
+      if(!lr){M.recipes.push(cr);byId[cr.id]=cr;byName[norm(cr.name)]=cr;changed=true;return;}
+      if(recScore(cr)>recScore(lr)){var i=M.recipes.indexOf(lr);if(i>=0){M.recipes[i]=cr;byId[cr.id]=cr;byName[norm(cr.name)]=cr;changed=true;}}
+    });
+    return changed;
+  }
+  function cb2(u){return u+(u.indexOf('?')<0?'?':'&')+'t='+Date.now();}
+  function pullSync(cb){
+    if(!SYNC){cb&&cb();return;}
+    fetch(cb2(SYNC),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+      var changed=mergeIn(d);
+      if(changed){M.updated=Date.now();saveLocal();pushSync();}
+      cb&&cb();
+    }).catch(function(){cb&&cb();});
+  }
+  var cloudOK=null;
+  function verifyCloud(){
+    if(!SYNC){cloudOK=null;return;}
+    var target=M.updated;
+    setTimeout(function(){
+      fetch(cb2(SYNC),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+        cloudOK=!!(d&&(d.updated||0)>=target-8000&&filledCount(d)>=filledCount(M));
+        (window.updStatus||function(){})();
+      }).catch(function(){cloudOK=false;(window.updStatus||function(){})();});
+    },2000);
+  }
   var $=function(s){return document.querySelector(s);};
 
   /* ---- 初次自動匯入菜單品項為「配方骨架」 ---- */
@@ -401,22 +443,39 @@ html,body{margin:0;background:var(--cream);color:var(--brown);font-family:'Archi
   $('#collapseAll').onclick=function(){openIds={};render();};
 
   /* ---- sync/backup ---- */
-  var syncNote=$('#syncNote');
+  var syncNote=$('#syncNote'),cloudStatus=$('#cloudStatus');
   function updNote(){
     if(SYNC){syncNote.innerHTML='☁️ 已連接雲端同步，配方會與其他裝置共用。';}
-    else{syncNote.innerHTML='目前只存這台裝置（未接雲端）。要多裝置共用，請部署配方庫專屬 Apps Script 後，把網址寫進程式（或用下方進階設定）。建議偶爾「匯出備份」。';}
+    else{syncNote.innerHTML='目前只存這台裝置（未接雲端）。建議偶爾「匯出備份」。';}
   }
+  window.updStatus=function(){
+    if(!cloudStatus)return;
+    if(!SYNC){cloudStatus.textContent='';cloudStatus.style.color='';return;}
+    if(cloudOK===true){cloudStatus.textContent='✅ 雲端已存檔，資料安全。';cloudStatus.style.color='var(--ok)';}
+    else if(cloudOK===false){cloudStatus.innerHTML='⚠️ 雲端沒存進去！資料目前只在這台裝置，請先按「匯出備份」，並告訴我一聲。';cloudStatus.style.color='#C0392B';}
+    else{cloudStatus.textContent='⏳ 雲端狀態確認中…';cloudStatus.style.color='var(--brown-soft)';}
+  };
+  window.restoreBackup=function(){
+    var b;try{b=localStorage.getItem(BKEY);}catch(e){}
+    if(!b){alert('這台裝置沒有本機備份');return;}
+    try{var d=JSON.parse(b);var before=filledCount(M);mergeIn(d);M.updated=Date.now();saveLocal();pushSync();verifyCloud();render();alert('已還原：填好的配方 '+before+' → '+filledCount(M)+' 項');}catch(e){alert('備份讀取失敗');}
+  };
   window.pullNow=function(){pullSync(function(){pullMenu(function(){render();});});};
   window.toggleAdv=function(){var u=$('#syncUrl'),b=$('#syncBtns'),e=$('#syncEdit');var show=u.style.display==='none';u.style.display=show?'block':'none';b.style.display=show?'flex':'none';e.textContent=show?'進階：如已自行部署配方庫雲端，可在此貼上網址（會覆蓋程式內設定）。':'';if(show){try{u.value=localStorage.getItem(UKEY)||'';}catch(x){}}};
   window.saveSync=function(){var v=$('#syncUrl').value.trim();if(!v){alert('請貼上網址');return;}SYNC=v;try{localStorage.setItem(UKEY,SYNC);}catch(e){}updNote();pushSync();alert('已儲存自訂網址');};
   window.exportData=function(){try{var bl=new Blob([JSON.stringify(M)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download='DAFA配方備份_'+new Date().toISOString().slice(0,10)+'.json';a.click();}catch(e){alert('匯出失敗');}};
   window.importData=function(inp){var f=inp.files&&inp.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){try{var d=JSON.parse(rd.result);if(d&&d.recipes){M=d;if(!M.recipes)M.recipes=[];persist();render();alert('已匯入');}else alert('檔案格式不符');}catch(e){alert('讀取失敗');}inp.value='';};rd.readAsText(f);};
-  updNote();
+  updNote();updStatus();
 
   /* ---- boot ---- */
-  importOnce();
   render();
-  pullSync(function(){render();pullMenu(function(){render();});});
+  // 先跟雲端合併（把別台已填的抓回來），再補菜單缺項，避免用空骨架蓋掉雲端
+  pullSync(function(){
+    importOnce();
+    render();updStatus();
+    pullMenu(function(){render();});
+  });
+  verifyCloud();
 })();
 </script>
 </body>
