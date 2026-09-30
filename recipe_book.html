@@ -172,10 +172,10 @@ html,body{margin:0;background:var(--cream);color:var(--brown);font-family:'Archi
     {c:'哦一系',n:'芒芒人海'},{c:'哦一系',n:'西瓜爺爺'},{c:'哦一系',n:'相芋椰島'},{c:'哦一系',n:'茉莉芒夏'},
     {c:'ㄚ就想喝系',n:'打發鮮奶茶'},{c:'ㄚ就想喝系',n:'茉莉奶'},{c:'ㄚ就想喝系',n:'蜜桃紅'},{c:'ㄚ就想喝系',n:'茉莉綠茶'},{c:'ㄚ就想喝系',n:'蜜桃蘋果冰茶'},
     {c:'睡得著系',n:'薄荷茶'},{c:'睡得著系',n:'森嶼草本茶'},
-    {c:'嘴饞系',n:'貝殼馬卡龍'},{c:'嘴饞系',n:'圓形馬卡龍'},{c:'嘴饞系',n:'巴斯克（原味）'},{c:'嘴饞系',n:'巴斯克（口味）'},{c:'嘴饞系',n:'戚風蛋糕'},
     {c:'Milky系',n:'宇治抹茶歐蕾 I/H'},{c:'Milky系',n:'焙茶歐蕾 I/H'},{c:'Milky系',n:'可可歐蕾 I/H'},{c:'Milky系',n:'紅烏龍雲朵歐蕾 I'},{c:'Milky系',n:'純 抹茶🍵 I/H'}
   ];
-  var MENU_CATS=['醒腦系','哦一系','ㄚ就想喝系','睡得著系','嘴饞系','Milky系'];
+  var MENU_CATS=['醒腦系','哦一系','ㄚ就想喝系','睡得著系','Milky系'];
+  var EXCLUDE_CATS=['嘴饞系'];   // 甜點類不列入配方庫（只做飲料）
 
   var SEED={updated:0,recipes:[
     {id:'r1',name:'茉純茶',cat:'ㄚ就想喝系',status:'live',forms:{ice:true,hot:true,to:true},toCap:'120oz',
@@ -258,7 +258,7 @@ html,body{margin:0;background:var(--cream);color:var(--brown);font-family:'Archi
   /* ---- 菜單品項清單（供對照提醒） ---- */
   function menuItemsFromCloud(d){
     var out=[];if(!d||!d.cats)return out;
-    d.cats.forEach(function(c){(c.items||[]).forEach(function(it){if(it&&it.name)out.push({c:c.name||'',n:it.name});});});
+    d.cats.forEach(function(c){if(EXCLUDE_CATS.indexOf(c.name)>=0)return;(c.items||[]).forEach(function(it){if(it&&it.name)out.push({c:c.name||'',n:it.name});});});
     return out;
   }
   function pullMenu(cb){
@@ -467,11 +467,16 @@ html,body{margin:0;background:var(--cream);color:var(--brown);font-family:'Archi
   window.importData=function(inp){var f=inp.files&&inp.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){try{var d=JSON.parse(rd.result);if(d&&d.recipes){M=d;if(!M.recipes)M.recipes=[];persist();render();alert('已匯入');}else alert('檔案格式不符');}catch(e){alert('讀取失敗');}inp.value='';};rd.readAsText(f);};
   updNote();updStatus();
 
+  // 移除「嘴饞系」等排除分類的空骨架（甜點不列入配方庫；已填內容的會保留）
+  function dropExcluded(){var b=M.recipes.length;M.recipes=M.recipes.filter(function(r){return !(EXCLUDE_CATS.indexOf(r.cat)>=0&&isEmptyRec(r));});return M.recipes.length!==b;}
+
   /* ---- boot ---- */
+  if(dropExcluded())saveLocal();
   render();
   // 先跟雲端合併（把別台已填的抓回來），再補菜單缺項，避免用空骨架蓋掉雲端
   pullSync(function(){
     importOnce();
+    if(dropExcluded()){M.updated=Date.now();saveLocal();pushSync();}
     render();updStatus();
     pullMenu(function(){render();});
   });
